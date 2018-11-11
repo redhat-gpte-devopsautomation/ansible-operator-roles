@@ -1,0 +1,146 @@
+---
+# tasks file for postgresql-ocp
+
+- name: Set Postgresql Secret to {{ _postgresql_state }}
+  k8s:
+    state: "{{_postgresql_state}}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{_postgresql_name}}"
+        namespace: "{{_postgresql_namespace}}"
+      stringData:
+        database-name: "{{_postgresql_database_name}}"
+        database-user: "{{_postgresql_user}}"
+        database-password: "{{_postgresql_password}}"
+
+- name: Set Postgresql Service to {{ _postgresql_state }}
+  k8s:
+    state: "{{_postgresql_state}}"
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{_postgresql_name}}"
+        namespace: "{{_postgresql_namespace}}"
+      spec:
+        ports:
+        - name: "{{ _postgresql_name }}"
+          port: "{{ _postgresql_port }}"
+          protocol: TCP
+        selector:
+          app: "{{ _postgresql_name }}"
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Postgresql PersistentVolumeClaim to {{ _postgresql_state }}
+  k8s:
+    state: "{{ _postgresql_state }}"
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "{{ _postgresql_name }}-pvc"
+        namespace: "{{ _postgresql_namespace }}"
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ _postgresql_volume_size }}"
+
+- name: Set Postgresql Deployment to {{ _postgresql_state }}
+  k8s:
+    state: "{{ _postgresql_state }}"
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ _postgresql_name }}"
+        namespace: "{{ _postgresql_namespace }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ _postgresql_name }}"
+        strategy:
+          type: Recreate
+        template:
+          metadata:
+            labels:
+              app: "{{ _postgresql_name }}"
+          spec:
+            containers:
+            - env:
+              - name: POSTGRESQL_USER
+                valueFrom:
+                  secretKeyRef:
+                    key: database-user
+                    name: "{{ _postgresql_name }}"
+              - name: POSTGRESQL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    key: database-password
+                    name: "{{ _postgresql_name }}"
+              - name: POSTGRESQL_DATABASE
+                valueFrom:
+                  secretKeyRef:
+                    key: database-name
+                    name: "{{ _postgresql_name }}"
+              image: 'registry.redhat.io/rhscl/postgresql-96-rhel7:latest'
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                exec:
+                  command:
+                  - /usr/libexec/check-container
+                  - --live
+                initialDelaySeconds: 120
+                timeoutSeconds: 10
+              name: postgresql
+              ports:
+              - containerPort: "{{ _postgresql_port }}"
+                protocol: TCP
+              readinessProbe:
+                exec:
+                  command:
+                  - /usr/libexec/check-container
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+              resources:
+                requests:
+                  cpu: "{{ _postgresql_cpu_request }}"
+                  memory: "{{ _postgresql_memory_request }}"
+                limits:
+                  cpu: "{{ _postgresql_cpu_limit }}"
+                  memory: "{{ _postgresql_memory_limit }}"
+              securityContext:
+                capabilities: {}
+                privileged: false
+              terminationMessagePath: /dev/termination-log
+              volumeMounts:
+              - mountPath: /var/lib/pgsql/data
+                name: postgresql-data
+            dnsPolicy: ClusterFirst
+            restartPolicy: Always
+            volumes:
+            - name: postgresql-data
+              persistentVolumeClaim:
+                claimName: "{{ _postgresql_name }}-pvc"
+
+- name: Verify that the Postgresql pod is running
+  when:
+    - _postgresql_state == "present"
+    - _postgresql_wait_for_init|bool
+  k8s:
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ _postgresql_name }}"
+    namespace: "{{ _postgresql_namespace }}"
+  register: postgresql_deployment
+  until:
+  - postgresql_deployment.result.status.availableReplicas is defined
+  - postgresql_deployment.result.status.availableReplicas > 0
+  retries: 25
+  delay: 5
+  changed_when: false

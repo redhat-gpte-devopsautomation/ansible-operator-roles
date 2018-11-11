@@ -1,0 +1,165 @@
+---
+# tasks file for Gogs
+- name: Set Gogs Service to {{ _gogs_state }}
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ _gogs_name }}"
+        namespace: "{{ _gogs_namespace }}"
+        labels:
+          app: "{{ _gogs_name }}"
+      spec:
+        selector:
+          app: "{{ _gogs_name }}"
+        ports:
+        - name: "{{ _gogs_name }}-tcp"
+          port: "{{ _gogs_port }}"
+          protocol: TCP
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Gogs HTTP Route to {{ _gogs_state }}
+  when: not _gogs_ssl|d(False)|bool
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition:
+      kind: Route
+      apiVersion: v1
+      metadata:
+        name: "{{ _gogs_name }}"
+        namespace: "{{ _gogs_namespace }}"
+        labels:
+          app: "{{ _gogs_name }}"
+      spec:
+        to:
+          name: "{{ _gogs_name }}"
+  register: gogs_route_result
+
+- name: Set Gogs HTTPS Route to {{ _gogs_state }}
+  when: _gogs_ssl|d(False)|bool
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition:
+      kind: Route
+      apiVersion: v1
+      metadata:
+        name: "{{ _gogs_name }}"
+        namespace: "{{ _gogs_namespace }}"
+        labels:
+          app: "{{ _gogs_name }}"
+      spec:
+        to:
+          kind: Service
+          name: "{{ _gogs_name }}"
+        tls:
+          termination: edge
+  register: gogs_route_result
+
+- name: Store Gogs Route Hostname
+  set_fact:
+    gogs_route: "{{ gogs_route_result.result.spec.host }}"
+  when: gogs_route_result.method == "create" or gogs_route_result.method == "patch"
+
+- name: Set Gogs PersistentVolumeClaim to {{ _gogs_state }}
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition:
+      kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: "{{ _gogs_name }}-pvc"
+        namespace: "{{ _gogs_namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ _gogs_volume_size }}"
+
+- name: Set Gogs ConfigMap to {{ _gogs_state }}
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition: "{{ lookup('template', './templates/gogs_config_map.j2') | from_yaml }}"
+
+- name: Set Gogs Deployment to {{ _gogs_state }}
+  k8s:
+    state: "{{ _gogs_state }}"
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ _gogs_name }}"
+        namespace: "{{ _gogs_namespace }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ _gogs_name }}"
+        strategy:
+          rollingParams:
+            intervalSeconds: 1
+            maxSurge: 25%
+            maxUnavailable: 25%
+            timeoutSeconds: 600
+            updatePeriodSeconds: 1
+          type: RollingUpdate
+        template:
+          metadata:
+            labels:
+              app: "{{ _gogs_name }}"
+          spec:
+            containers:
+            - image: "docker.io/wkulhanek/gogs:latest"
+              imagePullPolicy: IfNotPresent
+              name: gogs
+              ports:
+              - containerPort: "{{ _gogs_port }}"
+                protocol: TCP
+              resources:
+                request:
+                  cpu: "{{ _gogs_cpu_request }}"
+                  memory: "{{ _gogs_memory_request}}"
+                limits:
+                  cpu: "{{ _gogs_cpu_limit}}"
+                  memory: "{{ _gogs_memory_limit }}"
+              volumeMounts:
+              - name: gogs-data
+                mountPath: /data
+              - name: gogs-config
+                mountPath: /opt/gogs/custom/conf
+              # readinessProbe:
+              #     httpGet:
+              #       path: /
+              #       port: "{{ _gogs_port }}"
+              #       scheme: HTTP
+              #     initialDelaySeconds: 3
+              #     timeoutSeconds: 1
+              #     periodSeconds: 20
+              #     successThreshold: 1
+              #     failureThreshold: 3
+              # livenessProbe:
+              #     httpGet:
+              #       path: /
+              #       port: "{{ _gogs_port }}"
+              #       scheme: HTTP
+              #     initialDelaySeconds: 3
+              #     timeoutSeconds: 1
+              #     periodSeconds: 10
+              #     successThreshold: 1
+              #     failureThreshold: 3
+            dnsPolicy: ClusterFirst
+            restartPolicy: Always
+            terminationGracePeriodSeconds: 30
+            volumes:
+            - name: gogs-data
+              persistentVolumeClaim:
+                claimName: "{{ _gogs_name }}-pvc"
+            - name: gogs-config
+              configMap:
+                name: "{{ _gogs_name }}-config"
+                items:
+                  - key: app.ini
+                    path: app.ini

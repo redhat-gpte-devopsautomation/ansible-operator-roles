@@ -1,0 +1,44 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "{{ _gogs_name }}-config"
+  namespace: "{{ _gogs_namespace }}"
+data:
+  app.ini: |
+    APP_NAME = {{ _gogs_name }}
+    RUN_MODE = prod
+    RUN_USER = gogs
+
+    [database]
+    DB_TYPE  = postgres
+    HOST     = "{{ _gogs_postgresql_service_name }}:{{ _gogs_postgresql_port }}"
+    NAME     = "{{ _gogs_postgresql_database_name }}"
+    USER     = "{{ _gogs_postgresql_user }}"
+    PASSWD   = "{{ _gogs_postgresql_password }}"
+    SSL_MODE = disable
+
+    [repository]
+    ROOT = /data/repositories
+
+    [server]
+    ROOT_URL="{{ 'http' if not _gogs_ssl|d(False)|bool else 'https' }}://{{ gogs_route }}"
+
+    [security]
+    INSTALL_LOCK = true
+
+    [mailer]
+    ENABLED = false
+
+    [service]
+    ENABLE_CAPTCHA         = false
+    REGISTER_EMAIL_CONFIRM = false
+    ENABLE_NOTIFY_MAIL     = false
+    DISABLE_REGISTRATION   = false
+    REQUIRE_SIGNIN_VIEW    = false
+
+    [picture]
+    DISABLE_GRAVATAR        = false
+    ENABLE_FEDERATED_AVATAR = true
+
+    [webhook]
+    SKIP_TLS_VERIFY = true
