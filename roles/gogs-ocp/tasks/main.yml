@@ -18,6 +18,7 @@
         - name: "{{ _gogs_name }}-tcp"
           port: "{{ _gogs_port }}"
           protocol: TCP
+          targetPort: 3000
         sessionAffinity: None
         type: ClusterIP
 
@@ -116,7 +117,7 @@
               imagePullPolicy: IfNotPresent
               name: gogs
               ports:
-              - containerPort: "{{ _gogs_port }}"
+              - containerPort: 3000
                 protocol: TCP
               resources:
                 request:
