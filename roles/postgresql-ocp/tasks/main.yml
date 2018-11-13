@@ -29,6 +29,7 @@
         - name: "{{ _postgresql_name }}"
           port: "{{ _postgresql_port }}"
           protocol: TCP
+          targetPort: 5432
         selector:
           app: "{{ _postgresql_name }}"
         sessionAffinity: None
@@ -99,7 +100,7 @@
                 timeoutSeconds: 10
               name: postgresql
               ports:
-              - containerPort: "{{ _postgresql_port }}"
+              - containerPort: 5432
                 protocol: TCP
               readinessProbe:
                 exec:
