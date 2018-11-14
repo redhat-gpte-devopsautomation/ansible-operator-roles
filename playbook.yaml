@@ -17,10 +17,6 @@
     set_fact:
       gogs_route: "dummy"
 
-  - name: Print parameters
-    debug:
-      msg: "{{ postgresql_port}}"
-
   - name: Set up PostgreSQL
     include_role:
       name: ./roles/postgresql-ocp
@@ -28,7 +24,6 @@
       _postgresql_namespace: "{{ meta.namespace }}"
       _postgresql_name: "postgresql-gogs-{{ meta.name }}"
       _postgresql_database_name: "gogsdb"
-      _postgresql_port: "{{ postgresql_port }}"
       _postgresql_user: "gogsuser"
       _postgresql_password: "gogspassword"
       _postgresql_volume_size: "{{ postgresql_volume_size }}"
@@ -39,11 +34,9 @@
     vars:
       _gogs_namespace: "{{ meta.namespace }}"
       _gogs_name: "gogs-{{ meta.name }}"
-      _gogs_port: "{{ gogs_port }}"
       _gogs_ssl: "{{ gogs_ssl|d(False)|bool }}"
       _gogs_volume_size: "{{ gogs_volume_size}}"
       _gogs_postgresql_service_name: "postgresql-gogs-{{ meta.name }}"
       _gogs_postgresql_database_name: gogsdb
-      _gogs_postgresql_port: "{{ postgresql_port }}"
       _gogs_postgresql_user: gogsuser
       _gogs_postgresql_password: gogspassword
