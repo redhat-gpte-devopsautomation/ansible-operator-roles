@@ -1,0 +1,16 @@
+kind: Route
+apiVersion: v1
+metadata:
+  name: "{{ _gogs_name }}"
+  namespace: "{{ _gogs_namespace }}"
+  labels:
+    app: "{{ _gogs_name }}"
+spec:
+  to:
+    kind: Service
+    name: "{{ _gogs_name }}"
+{% if _gogs_ssl|d(False)|bool %}
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+{% endif %}

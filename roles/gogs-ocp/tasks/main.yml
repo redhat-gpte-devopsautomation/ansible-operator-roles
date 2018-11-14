@@ -22,42 +22,10 @@
         sessionAffinity: None
         type: ClusterIP
 
-- name: Set Gogs HTTP Route to {{ _gogs_state }}
-  when: not _gogs_ssl|d(False)|bool
+- name: Set Gogs Route to {{ _gogs_state }}
   k8s:
     state: "{{ _gogs_state }}"
-    definition:
-      kind: Route
-      apiVersion: v1
-      metadata:
-        name: "{{ _gogs_name }}"
-        namespace: "{{ _gogs_namespace }}"
-        labels:
-          app: "{{ _gogs_name }}"
-      spec:
-        to:
-          name: "{{ _gogs_name }}"
-  register: gogs_route_result
-
-- name: Set Gogs HTTPS Route to {{ _gogs_state }}
-  when: _gogs_ssl|d(False)|bool
-  k8s:
-    state: "{{ _gogs_state }}"
-    definition:
-      kind: Route
-      apiVersion: v1
-      metadata:
-        name: "{{ _gogs_name }}"
-        namespace: "{{ _gogs_namespace }}"
-        labels:
-          app: "{{ _gogs_name }}"
-      spec:
-        to:
-          kind: Service
-          name: "{{ _gogs_name }}"
-        tls:
-          insecureEdgeTerminationPolicy: Redirect
-          termination: edge
+    definition: "{{ lookup('template', './templates/gogs_route.j2') | from_yaml }}"
   register: gogs_route_result
 
 - name: Store Gogs Route Hostname
