@@ -77,6 +77,26 @@
           ports:
           - containerPort: 3000
             protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 3
+            timeoutSeconds: 1
+            periodSeconds: 20
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 3
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
           resources:
             request:
               cpu: "{{ _gogs_cpu_request }}"
@@ -89,26 +109,6 @@
             mountPath: /data
           - name: gogs-config
             mountPath: /opt/gogs/custom/conf
-          readinessProbe:
-              httpGet:
-                path: /
-                port: 3000
-                scheme: HTTP
-              initialDelaySeconds: 3
-              timeoutSeconds: 1
-              periodSeconds: 20
-              successThreshold: 1
-              failureThreshold: 3
-          livenessProbe:
-              httpGet:
-                path: /
-                port: 3000
-                scheme: HTTP
-              initialDelaySeconds: 3
-              timeoutSeconds: 1
-              periodSeconds: 10
-              successThreshold: 1
-              failureThreshold: 3
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         terminationGracePeriodSeconds: 30
