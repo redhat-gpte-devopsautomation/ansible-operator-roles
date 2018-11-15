@@ -16,3 +16,4 @@ _gogs_memory_request: 512Mi
 _gogs_memory_limit: 512Mi
 _gogs_cpu_request: 200m
 _gogs_cpu_limit: 500m
+_gogs_wait_for_init: true

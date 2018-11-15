@@ -3,19 +3,16 @@
 #
 # The Playbook expects the following variables to be set in the CR:
 # (Note that Camel case gets converted by the ansible-operator to Snake case)
-# - PostgresqlPort
 # - PostgresqlVolumeSize
 # - GogsVolumeSize
+# - GogsSSL
 # The following variables come from the ansible-operator
 # - meta.namespace
 # - meta.name (from the name of the CR)
 
 - hosts: localhost
+  gather_facts: no
   tasks:
-  - name: Set Fallback Facts for gogs_route
-    set_fact:
-      gogs_route: "dummy"
-
   - name: Set up PostgreSQL
     include_role:
       name: ./roles/postgresql-ocp

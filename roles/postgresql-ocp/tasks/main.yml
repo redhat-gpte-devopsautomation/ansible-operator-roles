@@ -51,97 +51,93 @@
           requests:
             storage: "{{ _postgresql_volume_size }}"
 
-- name: Set Postgresql Deployment to {{ _postgresql_state }}
+- name: Set Postgresql Pod to {{ _postgresql_state }}
   k8s:
     state: "{{ _postgresql_state }}"
     definition:
-      apiVersion: apps/v1
-      kind: Deployment
+      apiVersion: v1
+      kind: Pod
       metadata:
         name: "{{ _postgresql_name }}"
         namespace: "{{ _postgresql_namespace }}"
+        labels:
+          app: "{{ _postgresql_name }}"
       spec:
-        replicas: 1
-        selector:
-          matchLabels:
-            app: "{{ _postgresql_name }}"
-        strategy:
-          type: Recreate
-        template:
-          metadata:
-            labels:
-              app: "{{ _postgresql_name }}"
-          spec:
-            containers:
-            - env:
-              - name: POSTGRESQL_USER
-                valueFrom:
-                  secretKeyRef:
-                    key: database-user
-                    name: "{{ _postgresql_name }}"
-              - name: POSTGRESQL_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    key: database-password
-                    name: "{{ _postgresql_name }}"
-              - name: POSTGRESQL_DATABASE
-                valueFrom:
-                  secretKeyRef:
-                    key: database-name
-                    name: "{{ _postgresql_name }}"
-              image: 'registry.redhat.io/rhscl/postgresql-96-rhel7:latest'
-              imagePullPolicy: IfNotPresent
-              livenessProbe:
-                exec:
-                  command:
-                  - /usr/libexec/check-container
-                  - --live
-                initialDelaySeconds: 120
-                timeoutSeconds: 10
-              name: postgresql
-              ports:
-              - containerPort: 5432
-                protocol: TCP
-              readinessProbe:
-                exec:
-                  command:
-                  - /usr/libexec/check-container
-                initialDelaySeconds: 5
-                timeoutSeconds: 1
-              resources:
-                requests:
-                  cpu: "{{ _postgresql_cpu_request }}"
-                  memory: "{{ _postgresql_memory_request }}"
-                limits:
-                  cpu: "{{ _postgresql_cpu_limit }}"
-                  memory: "{{ _postgresql_memory_limit }}"
-              securityContext:
-                capabilities: {}
-                privileged: false
-              terminationMessagePath: /dev/termination-log
-              volumeMounts:
-              - mountPath: /var/lib/pgsql/data
-                name: postgresql-data
-            dnsPolicy: ClusterFirst
-            restartPolicy: Always
-            volumes:
-            - name: postgresql-data
-              persistentVolumeClaim:
-                claimName: "{{ _postgresql_name }}-pvc"
+        containers:
+        - env:
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: "{{ _postgresql_name }}"
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: "{{ _postgresql_name }}"
+          - name: POSTGRESQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: "{{ _postgresql_name }}"
+          image: 'registry.redhat.io/rhscl/postgresql-96-rhel7:latest'
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - /usr/libexec/check-container
+              - --live
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+          name: postgresql
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          readinessProbe:
+              command:
+              - /usr/libexec/check-container
+              - --live
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+          name: postgresql
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /usr/libexec/check-container
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: "{{ _postgresql_cpu_request }}"
+              memory: "{{ _postgresql_memory_request }}"
+            limits:
+              cpu: "{{ _postgresql_cpu_limit }}"
+              memory: "{{ _postgresql_memory_limit }}"
+          volumeMounts:
+          - mountPath: /var/lib/pgsql/data
+            name: postgresql-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: "{{ _postgresql_name }}-pvc"
 
-- name: Verify that the Postgresql pod is running
+- name: Verify that the Postgresql Pod is running
   when:
     - _postgresql_state == "present"
     - _postgresql_wait_for_init|bool
   k8s:
-    api_version: apps/v1
-    kind: Deployment
+    api_version: v1
+    kind: Pod
     name: "{{ _postgresql_name }}"
     namespace: "{{ _postgresql_namespace }}"
-  register: postgresql_deployment
+  register: postgresql_pod
   until:
-  - postgresql_deployment.result.status.availableReplicas is defined
-  - postgresql_deployment.result.status.availableReplicas > 0
+  - postgresql_pod.result.status.containerStatuses[0].ready|d(False)|bool
   retries: 25
   delay: 5
   changed_when: false
