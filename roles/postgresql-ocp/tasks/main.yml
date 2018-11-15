@@ -94,6 +94,7 @@
           - containerPort: 5432
             protocol: TCP
           readinessProbe:
+            exec:
               command:
               - /usr/libexec/check-container
               - --live
