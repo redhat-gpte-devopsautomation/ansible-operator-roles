@@ -11,7 +11,7 @@ data:
 
     [database]
     DB_TYPE  = postgres
-    HOST     = "{{ _gogs_postgresql_service_name }}:{{ _gogs_postgresql_port }}"
+    HOST     = "{{ _gogs_postgresql_service_name }}:5432"
     NAME     = "{{ _gogs_postgresql_database_name }}"
     USER     = "{{ _gogs_postgresql_user }}"
     PASSWD   = "{{ _gogs_postgresql_password }}"

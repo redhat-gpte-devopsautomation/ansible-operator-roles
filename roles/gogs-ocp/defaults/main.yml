@@ -5,9 +5,7 @@ _gogs_namespace: gogs
 _gogs_name: gogs
 
 _gogs_ssl: False
-_gogs_port: 3000
 _gogs_postgresql_database_name: postgresql
-_gogs_postgresql_port: 5432
 _gogs_postgresql_service_name: postgresql
 _gogs_postgresql_user: postgresql
 _gogs_postgresql_password: postgresql

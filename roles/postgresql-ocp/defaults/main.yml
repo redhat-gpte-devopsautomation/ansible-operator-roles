@@ -4,7 +4,6 @@ _postgresql_state: present
 _postgresql_namespace: postgresql
 _postgresql_name: postgresql
 
-_postgresql_port: 5432
 _postgresql_database_name: postgresql
 _postgresql_user: postgresql
 _postgresql_password: postgresql

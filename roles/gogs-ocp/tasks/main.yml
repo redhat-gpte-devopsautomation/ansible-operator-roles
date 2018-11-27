@@ -19,8 +19,8 @@
         selector:
           app: "{{ _gogs_name }}"
         ports:
-        - name: "{{ _gogs_name }}-tcp"
-          port: "{{ _gogs_port }}"
+        - name: gogs
+          port: 3000
           protocol: TCP
           targetPort: 3000
         sessionAffinity: None
