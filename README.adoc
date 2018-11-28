@@ -1,1 +1,11 @@
 = Ansible Roles for Ansible Operators
+
+This repository contains roles that can be used to set up various applications on Red Hat OpenShift Container Platform. The primary purpose of these roles is to be used in Operators to be deployed on a cluster.
+
+Available roles:
+
+* PostgreSQL (used by other applications)
+* Gogs: Github compatible repository
+* Gitea: Github compatible repository
+* SonarQube: Code Analysis tool
+* Nexus: Artifact Manager, Proxy and Container Registry

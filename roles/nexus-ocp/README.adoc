@@ -1,0 +1,55 @@
+nexus-ocp
+=========
+
+Requirements
+------------
+
+This role is designed to set up a Nexus artifact manager on an OpenShift cluster. The intended use for this role is in an Operator. The role does not set up Kubernetes controllers (like Deployments or ReplicaSets) but creates the Nexus Pod directly - this is the preferred approach to be used by an Operator.
+
+Role Variables
+--------------
+
+[cols="2,1,1,4",options="header"]
+|====
+|Variable Name|Default|Required|Description
+|_nexus_namespace|nexus|Yes|Project Name to install Nexus into
+|_nexus_name|nexus3|No|Name of the Nexus service
+|_nexus_ssl|False|No|Set up SSL on the Nexus Route
+|_nexus_volume_size|1Gi|No|Size of Persistent Volume to be created
+|_nexus_memory_request|512Mi|No|Minimum Memory Requirement
+|_nexus_memory_limit|512Mi|No|Maximum Memory Requirement
+|_nexus_cpu_request|200m|No|Minimum CPU Requirement
+|_nexus_cpu_limit|500m|No|Maximum CPU Requirement
+|_nexus_wait_for_init|true|No|Wait for the Nexs pod to be running and ready
+|_nexus_state|present|No|`present` to install, `absent` to remove
+|====
+
+Dependencies
+------------
+
+* k8s module.
+* Working .kube/config configuration.
+* The Project/Namespace must exist
+
+Example Playbook
+----------------
+
+[source,yaml]
+----
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Set up Nexus
+    include_role:
+      name: ./roles/nexus-ocp
+    vars:
+    _nexus_namespace: "nexus"
+    _nexus_name: "nexus"
+    _nexus_volume_size: "5Gi"
+    _nexus_ssl: "True"
+---
+
+License
+-------
+
+BSD
