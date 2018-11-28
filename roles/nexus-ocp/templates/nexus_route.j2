@@ -1,6 +1,8 @@
 kind: Route
 apiVersion: v1
 metadata:
+  annotations:
+    console.alpha.openshift.io/overview-app-route: "true"
   name: "{{ _nexus_name }}"
   namespace: "{{ _nexus_namespace }}"
   labels:
