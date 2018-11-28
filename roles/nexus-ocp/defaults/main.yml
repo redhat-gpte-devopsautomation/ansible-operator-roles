@@ -1,0 +1,13 @@
+---
+# defaults file for nexus-ocp
+_nexus_state: present
+_nexus_namespace: nexus
+_nexus_name: nexus3
+
+_nexus_ssl: False
+_nexus_volume_size: 1Gi
+_nexus_memory_request: 1Gi
+_nexus_memory_limit: 2Gi
+_nexus_cpu_request: 500m
+_nexus_cpu_limit: 2
+_nexus_wait_for_init: True

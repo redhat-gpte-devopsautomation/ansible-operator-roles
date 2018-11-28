@@ -1,0 +1,38 @@
+---
+# Persistent Gitea deployment playbook.
+#
+# The Playbook expects the following variables to be set in the CR:
+# (Note that Camel case gets converted by the ansible-operator to Snake case)
+# - PostgresqlVolumeSize
+# - GiteaVolumeSize
+# - GiteaSSL
+# The following variables come from the ansible-operator
+# - meta.namespace
+# - meta.name (from the name of the CR)
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Set up PostgreSQL
+    include_role:
+      name: ./roles/postgresql-ocp
+    vars:
+      _postgresql_namespace: "{{ meta.namespace }}"
+      _postgresql_name: "postgresql-gitea-{{ meta.name }}"
+      _postgresql_database_name: "giteadb"
+      _postgresql_user: "giteauser"
+      _postgresql_password: "giteapassword"
+      _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
+
+  - name: Set up Gitea
+    include_role:
+      name: ./roles/gitea-ocp
+    vars:
+      _gitea_namespace: "{{ meta.namespace }}"
+      _gitea_name: "gitea-{{ meta.name }}"
+      _gitea_ssl: "{{ gitea_ssl|d(False)|bool }}"
+      _gitea_volume_size: "{{ gitea_volume_size|d('4Gi') }}"
+      _gitea_postgresql_service_name: "postgresql-gitea-{{ meta.name }}"
+      _gitea_postgresql_database_name: giteadb
+      _gitea_postgresql_user: giteauser
+      _gitea_postgresql_password: giteapassword

@@ -1,0 +1,38 @@
+---
+# Persistent Sonarqube deployment playbook.
+#
+# The Playbook expects the following variables to be set in the CR:
+# (Note that Camel case gets converted by the ansible-operator to Snake case)
+# - PostgresqlVolumeSize
+# - SonarqubeVolumeSize
+# - SonarqubeSsl
+# The following variables come from the ansible-operator
+# - meta.namespace
+# - meta.name (from the name of the CR)
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Set up PostgreSQL
+    include_role:
+      name: ./roles/postgresql-ocp
+    vars:
+      _postgresql_namespace: "{{ meta.namespace }}"
+      _postgresql_name: "postgresql-sonarqube-{{ meta.name }}"
+      _postgresql_database_name: "sonardb"
+      _postgresql_user: "sonar"
+      _postgresql_password: "sonar"
+      _postgresql_volume_size: "{{ postgresql_volume_size }}"
+
+  - name: Set up Sonarqube
+    include_role:
+      name: ./roles/sonarqube-ocp
+    vars:
+      _sonarqube_namespace: "{{ meta.namespace }}"
+      _sonarqube_name: "sonarqube-{{ meta.name }}"
+      _sonarqube_ssl: "{{ sonarqube_ssl|d(False)|bool }}"
+      _sonarqube_volume_size: "{{ sonarqube_volume_size}}"
+      _sonarqube_postgresql_service_name: "postgresql-sonarqube-{{ meta.name }}"
+      _sonarqube_postgresql_database_name: sonardb
+      _sonarqube_postgresql_user: sonar
+      _sonarqube_postgresql_password: sonar

@@ -1,0 +1,16 @@
+kind: Route
+apiVersion: v1
+metadata:
+  name: "{{ _sonarqube_name }}"
+  namespace: "{{ _sonarqube_namespace }}"
+  labels:
+    app: "{{ _sonarqube_name }}"
+spec:
+  to:
+    kind: Service
+    name: "{{ _sonarqube_name }}"
+{% if _sonarqube_ssl|d(False)|bool %}
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+{% endif %}

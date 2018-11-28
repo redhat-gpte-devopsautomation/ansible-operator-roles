@@ -1,0 +1,22 @@
+---
+# Persistent Nexus deployment playbook.
+#
+# The Playbook expects the following variables to be set in the CR:
+# (Note that Camel case gets converted by the ansible-operator to Snake case)
+# - NexusVolumeSize
+# - NexusSsl
+# The following variables come from the ansible-operator
+# - meta.namespace
+# - meta.name (from the name of the CR)
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Set up Nexus
+    include_role:
+      name: ./roles/nexus-ocp
+    vars:
+      _nexus_namespace: "{{ meta.namespace }}"
+      _nexus_name: "{{ meta.name }}"
+      _nexus_volume_size: "{{ nexus_volume_size }}"
+      _nexus_ssl: "{{nexus_ssl}}"

@@ -9,8 +9,8 @@
 # - meta.name (from the name of the CR)
 # Set to valid values when running the playbook outside of the operator
 
-ansible-playbook ./playbooks/gogs.yaml \
+ansible-playbook ./playbooks/gitea.yaml \
   -e "postgresql_volume_size=2Gi" \
-  -e "gogs_volume_size=3Gi" \
-  -e "gogs_ssl=True" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gogs1"}}'
+  -e "gitea_volume_size=3Gi" \
+  -e "gitea_ssl=True" \
+  -e '{"meta": {"namespace":"wkgogs","name":"gitea"}}'

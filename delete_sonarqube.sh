@@ -4,7 +4,7 @@
 # - meta.name (from the name of the CR)
 # Set to valid values when running the playbook outside of the operator
 
-ansible-playbook ./playbooks/gogs.yaml \
+ansible-playbook ./playbooks/sonarqube.yaml \
   -e "_postgresql_state=absent" \
-  -e "_gogs_state=absent" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gogs1"}}'
+  -e "_sonarqube_state=absent" \
+  -e '{"meta": {"namespace":"wkgogs","name":"sonarqube"}}'

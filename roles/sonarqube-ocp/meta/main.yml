@@ -1,6 +1,6 @@
 galaxy_info:
   author: Wolfgang Kulhanek
-  description: Role to set up Gogs on an OpenShift (Kubernetes) Cluster
+  description: Role to set up Sonarqube on an OpenShift (Kubernetes) Cluster
   company: Red Hat
   license: Apache
   min_ansible_version: 2.6
@@ -9,7 +9,5 @@ galaxy_info:
     - kubernetes
     - k8s
     - ansible-operator
-    - gogs
-    - git
-    - repository
+    - sonarqube
 dependencies: []

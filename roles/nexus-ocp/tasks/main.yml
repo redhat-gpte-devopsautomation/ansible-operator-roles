@@ -1,0 +1,153 @@
+---
+# tasks file for Nexus
+- name: Set Nexus Service to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ _nexus_name }}"
+        namespace: "{{ _nexus_namespace }}"
+        labels:
+          app: "{{ _nexus_name }}"
+      spec:
+        selector:
+          app: "{{ _nexus_name }}"
+        ports:
+        - name: "nexus-tcp"
+          port: 8081
+          protocol: TCP
+          targetPort: 8081
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Nexus Registry Service to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ _nexus_name }}-registry"
+        namespace: "{{ _nexus_namespace }}"
+        labels:
+          app: "{{ _nexus_name }}"
+      spec:
+        selector:
+          app: "{{ _nexus_name }}"
+        ports:
+        - name: "nexus-registry-tcp"
+          port: 5000
+          protocol: TCP
+          targetPort: 5000
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Nexus Route to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition: "{{ lookup('template', './templates/nexus_route.j2') | from_yaml }}"
+  register: nexus_route
+
+- name: Set Nexus Registry Route to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition: "{{ lookup('template', './templates/nexus_registry_route.j2') | from_yaml }}"
+
+- name: Set Nexus PersistentVolumeClaim to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition:
+      kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: "{{ _nexus_name }}-pvc"
+        namespace: "{{ _nexus_namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ _nexus_volume_size }}"
+
+- name: Set Nexus Pod to {{ _nexus_state }}
+  k8s:
+    state: "{{ _nexus_state }}"
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: "{{ _nexus_name }}"
+        namespace: "{{ _nexus_namespace }}"
+        labels:
+          app: "{{ _nexus_name }}"
+      spec:
+        containers:
+        - image: "docker.io/sonatype/nexus3:latest"
+          imagePullPolicy: IfNotPresent
+          name: nexus
+          ports:
+          - containerPort: 8081
+            protocol: TCP
+          - containerPort: 5000
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 20
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 120
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            request:
+              cpu: "{{ _nexus_cpu_request }}"
+              memory: "{{ _nexus_memory_request}}"
+            limits:
+              cpu: "{{ _nexus_cpu_limit}}"
+              memory: "{{ _nexus_memory_limit }}"
+          volumeMounts:
+          - name: nexus-data
+            mountPath: /nexus-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: nexus-data
+          persistentVolumeClaim:
+            claimName: "{{ _nexus_name }}-pvc"
+  register: nexus_pod_changed
+
+- name: Verify that the Nexus Pod is running
+  when:
+    - _nexus_state == "present"
+    - _nexus_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _nexus_name }}"
+    namespace: "{{ _nexus_namespace }}"
+  register: nexus_pod
+  until:
+  - nexus_pod.result.status.containerStatuses[0].ready|d(False)|bool
+  retries: 25
+  delay: 5
+  changed_when: false
+
+- name: Configure Nexus the first time it is created
+  delegate_to: localhost
+  script: ./files/setup_nexus3.sh admin admin123 "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ nexus_route.result.spec.host }}"
+  when: nexus_pod_changed.method == "create"

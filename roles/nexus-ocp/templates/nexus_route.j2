@@ -1,0 +1,16 @@
+kind: Route
+apiVersion: v1
+metadata:
+  name: "{{ _nexus_name }}"
+  namespace: "{{ _nexus_namespace }}"
+  labels:
+    app: "{{ _nexus_name }}"
+spec:
+  to:
+    kind: Service
+    name: "{{ _nexus_name }}"
+{% if _nexus_ssl|d(False)|bool %}
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+{% endif %}

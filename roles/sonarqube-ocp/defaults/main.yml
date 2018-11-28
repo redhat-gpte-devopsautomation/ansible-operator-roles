@@ -1,0 +1,17 @@
+---
+# defaults file for sonarqube-ocp
+_sonarqube_state: present
+_sonarqube_namespace: sonarqube
+_sonarqube_name: sonarqube
+
+_sonarqube_ssl: False
+_sonarqube_postgresql_service_name: postgresql
+_sonarqube_postgresql_database_name: sonar
+_sonarqube_postgresql_user: sonar
+_sonarqube_postgresql_password: sonar
+_sonarqube_volume_size: 1Gi
+_sonarqube_memory_request: 2Gi
+_sonarqube_memory_limit: 3Gi
+_sonarqube_cpu_request: 1
+_sonarqube_cpu_limit: 2
+_sonarqube_wait_for_init: true
