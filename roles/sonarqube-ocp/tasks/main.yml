@@ -57,7 +57,7 @@
           app: "{{ _sonarqube_name }}"
       spec:
         containers:
-        - image: docker.io/wkulhanek/sonarqube:6.7.5
+        - image: docker.io/wkulhanek/sonarqube:6.7.6
           imagePullPolicy: IfNotPresent
           name: sonarqube
           ports:
