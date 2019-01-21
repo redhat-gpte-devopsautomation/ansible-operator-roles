@@ -24,12 +24,17 @@
       _postgresql_password: "gogspassword"
       _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
 
+  - name: Set Gogs Service name to default value
+    set_fact:
+      gogs_service_name: "gogs-{{ meta_name }}"
+    when:
+      gogs_service_name is not defined
   - name: Set up Gogs
     include_role:
       name: ./roles/gogs-ocp
     vars:
       _gogs_namespace: "{{ meta.namespace }}"
-      _gogs_name: "gogs-{{ meta.name }}"
+      _gogs_name: "{{ gogs_service_name }}"
       _gogs_ssl: "{{ gogs_ssl|d(False)|bool }}"
       _gogs_volume_size: "{{ gogs_volume_size|d('4Gi') }}"
       _gogs_postgresql_service_name: "postgresql-gogs-{{ meta.name }}"

@@ -15,7 +15,7 @@ Role Variables
 |====
 |Variable Name|Default|Required|Description
 |_gogs_namespace|gogs|Yes|Project Name to install Gogs into
-|_gogs_name|gogs|Yes|Name of the Gogs service
+|_gogs_name|gogs|Yes|Name of the Gogs service. Ensure this name is unique in your namespace/project
 |_gogs_ssl|False|No|Set up HTTPS for the Gogs Route
 |_gogs_postgresql_service_name|postgresql|Yes|Name of the PostgreSQL service to connect (should be listening on port 5432)
 |_gogs_postgresql_database_name|postgresql|Yes|Name of Database to connect to
