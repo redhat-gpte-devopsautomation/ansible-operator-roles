@@ -1,0 +1,57 @@
+jenkins-ocp
+=========
+
+Requirements
+------------
+
+This role is designed to set up a Jenkins server on an OpenShift cluster. The intended use for this role is in an Operator. The role does not set up Kubernetes controllers (like Deployments or ReplicaSets) but creates the Jenkins Pod directly - this is the preferred approach to be used by an Operator.
+This role also sets up OAUTH Authentication for Jenkins.
+The properties for the various objects were copied from the `jenkins-persistent` template that ships with OpenShift. 
+
+Role Variables
+--------------
+
+[cols="2,1,1,4",options="header"]
+|====
+|Variable Name|Default|Required|Description
+|_jenkins_namespace|jenkins|Yes|Project Name to install Jenkins into
+|_jenkins_name|jenkins|No|Name of the jenkins service
+|_jenkins_volume_size|1Gi|No|Size of Persistent Volume to be created
+|_jenkins_disable_administrative_monitors|false|No|Weather to disable administrative monitors (this speeds up the initial login dramatically but will not check for plugin updates)
+|_jenkins_memory_request|512Mi|No|Minimum Memory Requirement
+|_jenkins_memory_limit|512Mi|No|Maximum Memory Requirement
+|_jenkins_cpu_request|200m|No|Minimum CPU Requirement
+|_jenkins_cpu_limit|500m|No|Maximum CPU Requirement
+|_jenkins_wait_for_init|true|No|Wait for the Jenkins pod to be running and ready
+|_jenkins_state|present|No|`present` to install, `absent` to remove
+|====
+
+Dependencies
+------------
+
+* k8s module.
+* Working .kube/config configuration.
+* The Project/Namespace must exist
+
+Example Playbook
+----------------
+
+[source,yaml]
+----
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Set up jenkins
+    include_role:
+      name: ./roles/jenkins-ocp
+    vars:
+    _jenkins_namespace: "jenkins"
+    _jenkins_name: "jenkins"
+    _jenkins_volume_size: "5Gi"
+    _jenkins_disable_administrative_monitors: "True"
+---
+
+License
+-------
+
+BSD

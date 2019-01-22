@@ -1,0 +1,198 @@
+---
+# tasks file for Jenkins
+- name: Set Jenkins Service Account to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: "{{ _jenkins_name }}"
+        namespace: "{{ _jenkins_namespace }}"
+        annotations:
+          serviceaccounts.openshift.io/oauth-redirectreference.jenkins: "{{ _jenkins_oauth_config|to_json }}"
+
+- name: Set Jenkins Role Binding to {{ _jenkins_state }}
+  k8s:
+    definition:
+      kind: RoleBinding
+      apiVersion: v1
+      metadata:
+        name: "{{ _jenkins_name }}_edit"
+        namespace: "{{ _jenkins_namespace }}"
+      roleRef:
+        name: edit
+      subjects:
+      - kind: ServiceAccount
+        name: "{{ _jenkins_name }}"
+
+- name: Set Jenkins Service to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ _jenkins_name }}"
+        namespace: "{{ _jenkins_namespace }}"
+        annotations:
+          service.alpha.openshift.io/dependencies: "{{ _jenkins_service_dependencies|to_json }}"
+          service.openshift.io/infrastructure: "true"
+      spec:
+        ports:
+        - name: web
+          nodePort: 0
+          port: 80
+          protocol: TCP
+          targetPort: 8080
+        selector:
+          name: "{{ _jenkins_name }}"
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Jenkins JNLP Service to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ _jenkins_name }}-jnlp"
+        namespace: "{{ _jenkins_namespace }}"
+      spec:
+        ports:
+        - name: "agent"
+          nodePort: 0
+          port: 50000
+          protocol: TCP
+          targetPort: 50000
+        selector:
+          name: "{{ _jenkins_name }}"
+        sessionAffinity: None
+        type: ClusterIP
+
+- name: Set Jenkins Route to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      kind: Route
+      apiVersion: v1
+      metadata:
+        name: "{{ _jenkins_name }}"
+        namespace: "{{ _jenkins_namespace }}"
+        annotations:
+          haproxy.router.openshift.io/timeout: 4m
+          template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+      spec:
+        tls:
+          insecureEdgeTerminationPolicy: Redirect
+          termination: edge
+        to:
+          kind: Service
+          name: "{{ _jenkins_name }}"
+
+- name: Set Jenkins PersistentVolumeClaim to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: "{{ _jenkins_name }}-pvc"
+        namespace: "{{ _jenkins_namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ _jenkins_volume_size }}"
+
+- name: Set Jenkins Pod to {{ _jenkins_state }}
+  k8s:
+    state: "{{ _jenkins_state }}"
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: "{{ _jenkins_name }}"
+        namespace: "{{ _jenkins_namespace }}"
+        labels:
+          name: "{{ _jenkins_name }}"
+      spec:
+        containers:
+        - name: jenkins
+          image: "registry.redhat.io/openshift3/jenkins-2-rhel7"
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 50000
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 3
+            timeoutSeconds: 240
+          livenessProbe:
+            failureThreshold: 2
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 420
+            periodSeconds: 360
+            timeoutSeconds: 240
+          resources:
+            request:
+              cpu: "{{ _jenkins_cpu_request }}"
+              memory: "{{ _jenkins_memory_request}}"
+            limits:
+              cpu: "{{ _jenkins_cpu_limit}}"
+              memory: "{{ _jenkins_memory_limit }}"
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - name: jenkins-data
+            mountPath: /var/lib/jenkins
+          env:
+          - name: OPENSHIFT_ENABLE_OAUTH
+            value: "true"
+          - name: OPENSHIFT_ENABLE_REDIRECT_PROMPT
+            value: "true"
+          - name: DISABLE_ADMINISTRATIVE_MONITORS
+            value: "{{ _jenkins_disable_administrative_monitors }}"
+          - name: KUBERNETES_MASTER
+            value: "https://kubernetes.default:443"
+          - name: KUBERNETES_TRUST_CERTIFICATES
+            value: "true"
+          - name: JENKINS_SERVICE_NAME
+            value: "{{ _jenkins_name }}"
+          - name: JNLP_SERVICE_NAME
+            value: "{{ _jenkins_name }}-jnlp"
+          - name: ENABLE_FATAL_ERROR_LOG_FILE
+            value: "true"
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        serviceAccountName: "{{ _jenkins_name }}"
+        volumes:
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: "{{ _jenkins_name }}-pvc"
+
+- name: Verify that the jenkins Pod is running
+  when:
+    - _jenkins_state == "present"
+    - _jenkins_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _jenkins_name }}"
+    namespace: "{{ _jenkins_namespace }}"
+  register: jenkins_pod
+  until:
+  - jenkins_pod.result.status.containerStatuses[0].ready|d(False)|bool
+  retries: 25
+  delay: 5
+  changed_when: false
