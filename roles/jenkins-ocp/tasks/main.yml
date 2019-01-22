@@ -16,7 +16,7 @@
   k8s:
     definition:
       kind: RoleBinding
-      apiVersion: v1
+      apiVersion: rbac.authorization.k8s.io/v1
       metadata:
         name: "{{ _jenkins_name }}_edit"
         namespace: "{{ _jenkins_namespace }}"
