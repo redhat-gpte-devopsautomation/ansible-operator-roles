@@ -20,8 +20,11 @@
       metadata:
         name: "{{ _jenkins_name }}_edit"
         namespace: "{{ _jenkins_namespace }}"
+      groupNames: null
       roleRef:
-        name: edit
+        kind: ClusterRole
+        apiGroup: authorization.openshift.io/v1
+        name: "edit"
       subjects:
       - kind: ServiceAccount
         name: "{{ _jenkins_name }}"
