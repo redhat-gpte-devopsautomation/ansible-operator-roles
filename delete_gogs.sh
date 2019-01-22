@@ -7,4 +7,4 @@
 ansible-playbook ./playbooks/gogs.yaml \
   -e "_postgresql_state=absent" \
   -e "_gogs_state=absent" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gogs1"}}'
+  -e '{"meta": {"namespace":"xyz-gogs","name":"gogs"}}'

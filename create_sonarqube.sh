@@ -13,4 +13,4 @@ ansible-playbook ./playbooks/sonarqube.yaml \
   -e "postgresql_volume_size=2Gi" \
   -e "sonarqube_volume_size=3Gi" \
   -e "sonarqube_ssl=True" \
-  -e '{"meta": {"namespace":"wkgogs","name":"sonarqube"}}'
+  -e '{"meta": {"namespace":"xyz-sonarqube","name":"sonarqube"}}'

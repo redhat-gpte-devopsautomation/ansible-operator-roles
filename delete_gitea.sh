@@ -7,4 +7,4 @@
 ansible-playbook ./playbooks/gitea.yaml \
   -e "_postgresql_state=absent" \
   -e "_gitea_state=absent" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gitea"}}'
+  -e '{"meta": {"namespace":"xyz-gitea","name":"gitea"}}'

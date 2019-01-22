@@ -11,4 +11,4 @@
 ansible-playbook ./playbooks/nexus.yaml \
   -e "nexus_volume_size=2Gi" \
   -e "nexus_ssl=True" \
-  -e '{"meta": {"namespace":"wkgogs","name":"nexus"}}'
+  -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}'

@@ -7,4 +7,4 @@
 ansible-playbook ./playbooks/sonarqube.yaml \
   -e "_postgresql_state=absent" \
   -e "_sonarqube_state=absent" \
-  -e '{"meta": {"namespace":"wkgogs","name":"sonarqube"}}'
+  -e '{"meta": {"namespace":"xyz-sonarqube","name":"sonarqube"}}'

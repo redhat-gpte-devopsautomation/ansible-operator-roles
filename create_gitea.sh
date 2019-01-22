@@ -13,4 +13,4 @@ ansible-playbook ./playbooks/gitea.yaml \
   -e "postgresql_volume_size=2Gi" \
   -e "gitea_volume_size=3Gi" \
   -e "gitea_ssl=True" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gitea"}}'
+  -e '{"meta": {"namespace":"xyz-gitea","name":"gitea"}}'

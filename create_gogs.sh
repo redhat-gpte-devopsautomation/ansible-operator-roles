@@ -13,4 +13,4 @@ ansible-playbook ./playbooks/gogs.yaml \
   -e "postgresql_volume_size=2Gi" \
   -e "gogs_volume_size=3Gi" \
   -e "gogs_ssl=True" \
-  -e '{"meta": {"namespace":"wkgogs","name":"gogs1"}}'
+  -e '{"meta": {"namespace":"xyz-gogs","name":"gogs"}}'
