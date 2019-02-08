@@ -84,7 +84,7 @@
           app: "{{ _nexus_name }}"
       spec:
         containers:
-        - image: "docker.io/sonatype/nexus3:latest"
+        - image: "{{ _nexus_image }}:{{ _nexus_image_tag }}"
           imagePullPolicy: IfNotPresent
           name: nexus
           ports:

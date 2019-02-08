@@ -82,7 +82,7 @@
       spec:
         serviceAccountName: "{{ _gitea_name }}"
         containers:
-        - image: "docker.io/wkulhanek/gitea:latest"
+        - image: "{{ _gitea_image }}:{{ _gitea_image_tag }}"
           imagePullPolicy: IfNotPresent
           name: gitea
           ports:

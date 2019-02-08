@@ -1,15 +1,12 @@
-gogs-ocp
-========
+= gogs-ocp
 
-Requirements
-------------
+== Requirements
 
 This role is designed to set up Gogs (the Go Github Server) on an OpenShift cluster. The intended use for this role is in an Operator. The role does not set up Kubernetes controllers (like Deployments or ReplicaSets) but creates the Gogs Pod directly - this is the preferred approach to be used by an Operator.
 
 This role also requires a PostgreSQL Database to be running in the same OpenShift project as the Gogs Server. This database needs to be set up first.
 
-Role Variables
---------------
+== Role Variables
 
 [cols="2,1,1,4",options="header"]
 |====
@@ -27,19 +24,19 @@ Role Variables
 |_gogs_cpu_request|200m|No|Minimum CPU Requirement
 |_gogs_cpu_limit|500m|No|Maximum CPU Requirement
 |_gogs_wait_for_init|true|No|Wait for the database pod to be running and ready
+|_gogs_image|docker.io/wkulhanek/gitea|Yes|Container image for Gogs
+|_gogs_image_tag|latest|Yes|Tag for Gogs container image
 |_gogs_state|present|No|`present` to install, `absent` to remove
 |====
 
-Dependencies
-------------
+== Dependencies
 
 * k8s module.
 * Running PostgreSQL database listening on port 5432
 * Working .kube/config configuration.
 * The Project/Namespace must exist
 
-Example Playbook
-----------------
+== Example Playbook
 
 [source,yaml]
 ----
@@ -71,7 +68,6 @@ Example Playbook
       _gogs_postgresql_password: gogspassword
 ----
 
-License
--------
+== License
 
 BSD

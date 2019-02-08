@@ -17,3 +17,5 @@ _gitea_memory_limit: 512Mi
 _gitea_cpu_request: 200m
 _gitea_cpu_limit: 500m
 _gitea_wait_for_init: true
+_gitea_image: docker.io/wkulhanek/gitea
+_gitea_image_tag: latest

@@ -36,6 +36,7 @@
       _gitea_namespace: "{{ meta.namespace }}"
       _gitea_name: "{{ gitea_service_name }}"
       _gitea_ssl: "{{ gitea_ssl|d(False)|bool }}"
+      _gitea_image_tag: "{{ gitea_image_tag|d('latest') }}"
       _gitea_volume_size: "{{ gitea_volume_size|d('4Gi') }}"
       _gitea_postgresql_service_name: "postgresql-gitea-{{ meta.name }}"
       _gitea_postgresql_database_name: giteadb

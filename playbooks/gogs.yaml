@@ -37,6 +37,7 @@
       _gogs_name: "{{ gogs_service_name }}"
       _gogs_ssl: "{{ gogs_ssl|d(False)|bool }}"
       _gogs_volume_size: "{{ gogs_volume_size|d('4Gi') }}"
+      _gogs_image_tag: "{{ gogs_image_tag|d('latest') }}"
       _gogs_postgresql_service_name: "postgresql-gogs-{{ meta.name }}"
       _gogs_postgresql_database_name: gogsdb
       _gogs_postgresql_user: gogsuser

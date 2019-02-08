@@ -71,7 +71,7 @@
           app: "{{ _gogs_name }}"
       spec:
         containers:
-        - image: "docker.io/wkulhanek/gogs:latest"
+        - image: "{{ _gogs_image }}:{{ _gogs_image_tag }}"
           imagePullPolicy: IfNotPresent
           name: gogs
           ports:

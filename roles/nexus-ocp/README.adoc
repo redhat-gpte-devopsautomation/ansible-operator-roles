@@ -1,13 +1,10 @@
-nexus-ocp
-=========
+= nexus-ocp
 
-Requirements
-------------
+== Requirements
 
 This role is designed to set up a Nexus artifact manager on an OpenShift cluster. The intended use for this role is in an Operator. The role does not set up Kubernetes controllers (like Deployments or ReplicaSets) but creates the Nexus Pod directly - this is the preferred approach to be used by an Operator.
 
-Role Variables
---------------
+== Role Variables
 
 [cols="2,1,1,4",options="header"]
 |====
@@ -21,18 +18,18 @@ Role Variables
 |_nexus_cpu_request|200m|No|Minimum CPU Requirement
 |_nexus_cpu_limit|500m|No|Maximum CPU Requirement
 |_nexus_wait_for_init|true|No|Wait for the Nexs pod to be running and ready
+|_nexus_image|docker.io/sonatype/nexus3|Yes|Nexus image for Gitea
+|_nexus_image_tag|latest|Yes|Tag for Nexus container image
 |_nexus_state|present|No|`present` to install, `absent` to remove
 |====
 
-Dependencies
-------------
+== Dependencies
 
 * k8s module.
 * Working .kube/config configuration.
 * The Project/Namespace must exist
 
-Example Playbook
-----------------
+== Example Playbook
 
 [source,yaml]
 ----
@@ -49,7 +46,6 @@ Example Playbook
     _nexus_ssl: "True"
 ---
 
-License
--------
+== License
 
 BSD

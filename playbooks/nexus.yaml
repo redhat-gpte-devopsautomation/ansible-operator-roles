@@ -20,3 +20,4 @@
       _nexus_name: "{{ meta.name }}"
       _nexus_volume_size: "{{ nexus_volume_size }}"
       _nexus_ssl: "{{nexus_ssl}}"
+      _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
