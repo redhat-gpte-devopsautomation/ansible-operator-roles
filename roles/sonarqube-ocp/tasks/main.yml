@@ -57,7 +57,7 @@
           app: "{{ _sonarqube_name }}"
       spec:
         containers:
-        - image: "{{ _sonarqube_image }}:{{ _sonarqube_image_version }}"
+        - image: "{{ _sonarqube_image }}:{{ _sonarqube_image_tag }}"
           imagePullPolicy: IfNotPresent
           name: sonarqube
           ports:
