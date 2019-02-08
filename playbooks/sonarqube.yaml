@@ -29,6 +29,8 @@
       _postgresql_user: "sonar"
       _postgresql_password: "sonar"
       _postgresql_volume_size: "{{ postgresql_volume_size }}"
+      _postgresql_image: "{{ postgresql_image|d('registry.redhat.io/rhscl/postgresql-96-rhel7') }}"
+      _postgresql_image_tag: "{{ postgresql_image_tag|d('latest') }}"
 
   - name: Set up Sonarqube
     include_role:

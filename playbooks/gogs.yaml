@@ -23,6 +23,8 @@
       _postgresql_user: "gogsuser"
       _postgresql_password: "gogspassword"
       _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
+      _postgresql_image: "{{ postgresql_image|d('registry.redhat.io/rhscl/postgresql-96-rhel7') }}"
+      _postgresql_image_tag: "{{ postgresql_image_tag|d('latest') }}"
 
   - name: Set Gogs Service name to default value
     set_fact:

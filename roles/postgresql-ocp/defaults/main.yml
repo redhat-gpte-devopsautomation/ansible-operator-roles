@@ -14,3 +14,5 @@ _postgresql_cpu_request: 200m
 _postgresql_cpu_limit: 500m
 
 _postgresql_wait_for_init: true
+_postgresql_image: registry.redhat.io/rhscl/postgresql-96-rhel7
+_postgresql_image_tag: latest

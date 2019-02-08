@@ -80,7 +80,7 @@
               secretKeyRef:
                 key: database-name
                 name: "{{ _postgresql_name }}"
-          image: 'registry.redhat.io/rhscl/postgresql-96-rhel7:latest'
+          image: "{{ _postgresql_image }}:{{ _postgresql_image_tag }}"
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
