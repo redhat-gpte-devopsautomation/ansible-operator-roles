@@ -18,7 +18,7 @@
     vars:
       _nexus_namespace: "{{ meta.namespace }}"
       _nexus_name: "{{ meta.name }}"
-      _nexus_volume_size: "{{ nexus_volume_size|d(1Gi) }}"
+      _nexus_volume_size: "{{ nexus_volume_size|d('1Gi') }}"
       _nexus_ssl: "{{nexus_ssl|d('False')}}"
       _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
       _nexus_cpu_request: "{{ nexus_cpu_request|d('500m')"
