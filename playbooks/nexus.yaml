@@ -3,8 +3,13 @@
 #
 # The Playbook expects the following variables to be set in the CR:
 # (Note that Camel case gets converted by the ansible-operator to Snake case)
-# - NexusVolumeSize
-# - NexusSsl
+# - nexusVolumeSize
+# - nexusSsl
+# Optional Variables:
+# - nexusCpuRequest
+# - nexusCpuLimit
+# - nexusMemoryRequest
+# - nexusMemoryLimit
 # The following variables come from the ansible-operator
 # - meta.namespace
 # - meta.name (from the name of the CR)
@@ -12,7 +17,13 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-  - name: Debug things
+  - name: Debug Meta data
+    debug:
+      msg: "name: {{ meta.name }}, {{ meta.namespace }}"
+  - name: Debug old parameters
+    debug:
+      msg: "nexus_volume_size: {{ nexus_volume_size }}, nexus_ssl: {{ nexus_ssl }}"
+  - name: Debug parameters things
     debug:
       msg: "nexus_cpu_request: {{ nexus_cpu_request }}, nexus_memory_request: {{ nexus_memory_request }}, nexus_cpu_limit: {{ nexus_cpu_limit }}, nexus_memory_limit: {{ nexus_memory_limit }}"
   - name: Set up Nexus
@@ -22,7 +33,7 @@
       _nexus_namespace: "{{ meta.namespace }}"
       _nexus_name: "{{ meta.name }}"
       _nexus_volume_size: "{{ nexus_volume_size|d('1Gi') }}"
-      _nexus_ssl: "{{nexus_ssl|d('False')}}"
+      _nexus_ssl: "{{ nexus_ssl|d('False') }}"
       _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
       _nexus_cpu_request: "{{ nexus_cpu_request|d('500m') }}"
       _nexus_cpu_limit: "{{ nexus_cpu_limit|d('2') }}"
