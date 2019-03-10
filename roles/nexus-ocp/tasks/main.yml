@@ -138,6 +138,13 @@
             claimName: "{{ _nexus_name }}-pvc"
   register: nexus_pod_changed
 
+- name: Pause for 10 seconds to wait for pod to be in the system
+  when:
+    - _nexus_state == "present"
+    - _nexus_wait_for_init|bool
+  pause:
+    seconds: 10
+
 - name: Verify that the Nexus Pod is running
   when:
     - _nexus_state == "present"
