@@ -108,7 +108,30 @@
           persistentVolumeClaim:
             claimName: "{{ _sonarqube_name }}-pvc"
 
-- name: Verify that the sonarqube Pod is running
+- name: Pause to wait for pod to be in the system
+  when:
+    - _sonarqube_state == "present"
+    - _sonarqube_wait_for_init|bool
+  pause:
+    seconds: 5
+
+- name: Verify that the Sonarqube Pod is running
+  when:
+    - _sonarqube_state == "present"
+    - _sonarqube_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _sonarqube_name }}"
+    namespace: "{{ _sonarqube_namespace }}"
+  register: sonarqube_pod
+  until:
+  - sonarqube_pod.result.status.phase == "Running"
+  retries: 50
+  delay: 10
+  changed_when: false
+
+- name: Verify that the Sonarqube Pod is ready
   when:
     - _sonarqube_state == "present"
     - _sonarqube_wait_for_init|bool

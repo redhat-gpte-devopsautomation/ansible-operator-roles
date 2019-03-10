@@ -123,7 +123,30 @@
               - key: app.ini
                 path: app.ini
 
+- name: Pause to wait for pod to be in the system
+  when:
+    - _gogs_state == "present"
+    - _gogs_wait_for_init|bool
+  pause:
+    seconds: 5
+
 - name: Verify that the Gogs Pod is running
+  when:
+    - _gogs_state == "present"
+    - _gogs_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _gogs_name }}"
+    namespace: "{{ _gogs_namespace }}"
+  register: gogs_pod
+  until:
+  - gogs_pod.result.status.phase == "Running"
+  retries: 50
+  delay: 10
+  changed_when: false
+
+- name: Verify that the Gogs Pod is ready
   when:
     - _gogs_state == "present"
     - _gogs_wait_for_init|bool

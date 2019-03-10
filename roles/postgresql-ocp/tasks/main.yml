@@ -116,7 +116,30 @@
           persistentVolumeClaim:
             claimName: "{{ _postgresql_name }}-pvc"
 
-- name: Verify that the Postgresql Pod is running
+- name: Pause to wait for pod to be in the system
+  when:
+    - _postgresql_state == "present"
+    - _postgresql_wait_for_init|bool
+  pause:
+    seconds: 5
+
+- name: Verify that the PostgreSQL Pod is running
+  when:
+    - _postgresql_state == "present"
+    - _postgresql_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _postgresql_name }}"
+    namespace: "{{ _postgresql_namespace }}"
+  register: postgresql_pod
+  until:
+  - postgresql_pod.result.status.phase == "Running"
+  retries: 50
+  delay: 10
+  changed_when: false
+
+- name: Verify that the Postgresql Pod is ready
   when:
     - _postgresql_state == "present"
     - _postgresql_wait_for_init|bool

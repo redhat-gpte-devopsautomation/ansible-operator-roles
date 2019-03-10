@@ -134,7 +134,30 @@
               - key: app.ini
                 path: app.ini
 
+- name: Pause to wait for pod to be in the system
+  when:
+    - _gitea_state == "present"
+    - _gitea_wait_for_init|bool
+  pause:
+    seconds: 5
+
 - name: Verify that the Gitea Pod is running
+  when:
+    - _gitea_state == "present"
+    - _gitea_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _gitea_name }}"
+    namespace: "{{ _gitea_namespace }}"
+  register: gitea_pod
+  until:
+  - gitea_pod.result.status.phase == "Running"
+  retries: 50
+  delay: 10
+  changed_when: false
+
+- name: Verify that the Gitea Pod is ready
   when:
     - _gitea_state == "present"
     - _gitea_wait_for_init|bool
