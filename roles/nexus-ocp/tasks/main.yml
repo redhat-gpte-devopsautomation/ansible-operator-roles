@@ -138,12 +138,44 @@
             claimName: "{{ _nexus_name }}-pvc"
   register: nexus_pod_changed
 
-- name: Pause for 10 seconds to wait for pod to be in the system
+- name: Pause to wait for pod to be in the system
   when:
     - _nexus_state == "present"
     - _nexus_wait_for_init|bool
   pause:
-    seconds: 10
+    seconds: 5
+
+- name: Verify that the Nexus Pod is running
+  when:
+    - _nexus_state == "present"
+    - _nexus_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _nexus_name }}"
+    namespace: "{{ _nexus_namespace }}"
+  register: nexus_pod
+  until:
+  - nexus_pod.result.status.phase == "Running"
+  retries: 50
+  delay: 10
+  changed_when: false
+
+- name: Verify that the Nexus Pod is ready
+  when:
+    - _nexus_state == "present"
+    - _nexus_wait_for_init|bool
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ _nexus_name }}"
+    namespace: "{{ _nexus_namespace }}"
+  register: nexus_pod
+  until:
+  - nexus_pod.result.status.containerStatuses[0].ready|d(False)|bool
+  retries: 50
+  delay: 10
+  changed_when: false
 
 - name: Verify that the Nexus Pod is running
   when:
