@@ -1,5 +1,12 @@
 ---
 # tasks file for Nexus
+- name: Debug old parameters
+  debug:
+    msg: "_nexus_volume_size: {{ _nexus_volume_size }}, _nexus_ssl: {{ _nexus_ssl }}"
+- name: Debug parameters things
+  debug:
+    msg: "_nexus_cpu_request: {{ _nexus_cpu_request }}, _nexus_memory_request: {{ _nexus_memory_request }}, _nexus_cpu_limit: {{ _nexus_cpu_limit }}, _nexus_memory_limit: {{ _nexus_memory_limit }}"
+ 
 - name: Set Nexus Service to {{ _nexus_state }}
   k8s:
     state: "{{ _nexus_state }}"

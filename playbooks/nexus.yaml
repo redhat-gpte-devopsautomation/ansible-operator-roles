@@ -17,15 +17,6 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-  - name: Debug Meta data
-    debug:
-      msg: "name: {{ meta.name }}, {{ meta.namespace }}"
-  - name: Debug old parameters
-    debug:
-      msg: "nexus_volume_size: {{ nexus_volume_size }}, nexus_ssl: {{ nexus_ssl }}"
-  - name: Debug parameters things
-    debug:
-      msg: "nexus_cpu_request: {{ nexus_cpu_request }}, nexus_memory_request: {{ nexus_memory_request }}, nexus_cpu_limit: {{ nexus_cpu_limit }}, nexus_memory_limit: {{ nexus_memory_limit }}"
   - name: Set up Nexus
     include_role:
       name: ./roles/nexus-ocp
