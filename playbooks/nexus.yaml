@@ -13,7 +13,8 @@
   gather_facts: no
   tasks:
   - name: Debug things
-    msg: "nexus_cpu_request: {{ nexus_cpu_request }}, nexus_memory_request: {{ nexus_memory_request }}, nexus_cpu_limit: {{ nexus_cpu_limit }}, nexus_memory_limit: {{ nexus_memory_limit }}"
+    debug:
+      msg: "nexus_cpu_request: {{ nexus_cpu_request }}, nexus_memory_request: {{ nexus_memory_request }}, nexus_cpu_limit: {{ nexus_cpu_limit }}, nexus_memory_limit: {{ nexus_memory_limit }}"
   - name: Set up Nexus
     include_role:
       name: ./roles/nexus-ocp
