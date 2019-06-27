@@ -1,0 +1,48 @@
+---
+# Tasks to setup Nexus the first time
+
+# Upload all groovy scripts we will be using
+- include: declare_script.yml
+  with_items:
+    - update_admin_password
+    - delete_repo
+    - create_repo_maven_proxy
+    - create_repo_maven_group
+    - create_repo_maven_hosted
+    - create_repo_docker_hosted
+    - create_repo_npm_hosted
+    - create_repo_npm_proxy
+    - create_repo_npm_group
+
+# Delete default repos
+- include: delete_repo.yml
+  when: _nexus_delete_default_repos
+  with_items:
+    - maven-central
+    - maven-public
+    - maven-releases
+    - maven-snapshots
+    - nuget-group
+    - nuget-hosted
+    - nuget.org-proxy
+
+- include: create_repo_maven_proxy.yml
+  with_items: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
+
+- include: create_repo_maven_hosted.yml
+  with_items: "{{ nexus_repos_maven_hosted | d(_nexus_repos_maven_hosted) }}"
+
+- include: create_repo_maven_group.yml
+  with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
+
+- include: create_repo_docker_hosted.yml
+  with_items: "{{ nexus_repos_docker_hosted | d(_nexus_repos_docker_hosted) }}"
+
+- include: create_repo_npm_proxy.yml
+  with_items: "{{ nexus_repos_npm_proxy | d(_nexus_repos_npm_proxy) }}"
+
+- include: create_repo_npm_group.yml
+  with_items: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
+
+- include: update_admin_password.yml
+  when: new_nexus_admin_password is defined 

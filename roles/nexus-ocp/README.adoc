@@ -49,3 +49,7 @@ This role is designed to set up a Nexus artifact manager on an OpenShift cluster
 == License
 
 BSD
+
+== Credits
+
+Some portions of this code came from: https://github.com/savoirfairelinux/ansible-nexus3-oss

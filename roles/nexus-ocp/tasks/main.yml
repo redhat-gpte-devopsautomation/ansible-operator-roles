@@ -6,7 +6,7 @@
 - name: Debug parameters things
   debug:
     msg: "_nexus_cpu_request: {{ _nexus_cpu_request }}, _nexus_memory_request: {{ _nexus_memory_request }}, _nexus_cpu_limit: {{ _nexus_cpu_limit }}, _nexus_memory_limit: {{ _nexus_memory_limit }}"
- 
+
 - name: Set Nexus Service to {{ _nexus_state }}
   k8s:
     state: "{{ _nexus_state }}"
@@ -177,7 +177,7 @@
   delay: 10
   changed_when: false
 
-- name: Configure Nexus the first time it is created
-  delegate_to: localhost
-  script: ./files/setup_nexus3.sh admin admin123 "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ nexus_route.result.spec.host }}"
+- include: setup.yml
   when: nexus_pod_changed.method == "create"
+  vars:
+    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ nexus_route.result.spec.host }}"
