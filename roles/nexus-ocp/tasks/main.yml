@@ -120,11 +120,11 @@
             successThreshold: 1
             failureThreshold: 3
           resources:
-            request:
+            requests:
               cpu: "{{ _nexus_cpu_request }}"
-              memory: "{{ _nexus_memory_request}}"
+              memory: "{{ _nexus_memory_request }}"
             limits:
-              cpu: "{{ _nexus_cpu_limit}}"
+              cpu: "{{ _nexus_cpu_limit }}"
               memory: "{{ _nexus_memory_limit }}"
           volumeMounts:
           - name: nexus-data

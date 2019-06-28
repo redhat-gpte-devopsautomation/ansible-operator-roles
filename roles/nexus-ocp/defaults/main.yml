@@ -5,7 +5,7 @@ _nexus_namespace: nexus
 _nexus_name: nexus3
 
 _nexus_ssl: False
-_nexus_volume_size: 1Gi
+_nexus_volume_size: 4Gi
 _nexus_memory_request: 1Gi
 _nexus_memory_limit: 2Gi
 _nexus_cpu_request: 500m
