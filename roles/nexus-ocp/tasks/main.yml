@@ -177,7 +177,8 @@
   delay: 10
   changed_when: false
 
-- include_tasks: setup.yml
-  when: nexus_pod_changed.method == "create"
+- name: Perform Initial Nexus Configuration 
+  include_tasks: setup.yml
+#  when: nexus_pod_changed.method == "create"
   vars:
     nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ nexus_route.result.spec.host }}"

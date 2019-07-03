@@ -11,6 +11,6 @@
 ansible-playbook ./playbooks/nexus.yaml \
   -e "nexus_volume_size=5Gi" \
   -e "nexus_ssl=True" \
-  -e "nexus_image_tag=latest" \
+  -e "nexus_image_tag=3.17.0" \
   -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}' \
   -e "new_nexus_admin_password=sweetie"

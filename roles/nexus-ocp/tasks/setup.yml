@@ -1,8 +1,30 @@
 ---
 # Tasks to setup Nexus the first time
 
+# Discover admin password for 3.17+
+- name: Attempt to fetch password file
+  shell: "oc cp {{ _nexus_name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
+  ignore_errors: true
+  register: oc_copy
+
+- name: Get Admin Password for 3.17+
+  when: oc_copy.rc == 0
+  block:
+    - name: Read file
+      slurp:
+        src: /tmp/admin.password
+      register: admin_password
+    - name: Save admin password
+      set_fact:
+        _nexus_admin_password: "{{ admin_password['content']|b64decode }}"
+    - name: Remove temporary file
+      file:
+        path: /tmp/admin.password
+        state: absent
+
 # Upload all groovy scripts we will be using
-- include_tasks: declare_script.yml
+- name: Declare groovy scripts
+  include_tasks: declare_script.yml
   with_items:
     - update_admin_password
     - delete_repo
@@ -15,7 +37,8 @@
     - create_repo_npm_group
 
 # Delete default repos
-- include_tasks: delete_repo.yml
+- name: Delete default repos
+  include_tasks: delete_repo.yml
   when: _nexus_delete_default_repos
   with_items:
     - maven-central
@@ -26,23 +49,30 @@
     - nuget-hosted
     - nuget.org-proxy
 
-- include_tasks: create_repo_maven_proxy.yml
+- name: Create Maven Proxies
+  include_tasks: create_repo_maven_proxy.yml
   with_items: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
 
-- include_tasks: create_repo_maven_hosted.yml
+- name: Create Maven Hosted Repos
+  include_tasks: create_repo_maven_hosted.yml
   with_items: "{{ nexus_repos_maven_hosted | d(_nexus_repos_maven_hosted) }}"
 
-- include_tasks: create_repo_maven_group.yml
+- name: Create Maven Groups
+  include_tasks: create_repo_maven_group.yml
   with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
 
-- include_tasks: create_repo_docker_hosted.yml
+- name: Create Docker Repos
+  include_tasks: create_repo_docker_hosted.yml
   with_items: "{{ nexus_repos_docker_hosted | d(_nexus_repos_docker_hosted) }}"
 
-- include_tasks: create_repo_npm_proxy.yml
+- name: Create NPM Proxies
+  include_tasks: create_repo_npm_proxy.yml
   with_items: "{{ nexus_repos_npm_proxy | d(_nexus_repos_npm_proxy) }}"
 
-- include_tasks: create_repo_npm_group.yml
+- name: Create NPM Groups
+  include_tasks: create_repo_npm_group.yml
   with_items: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
 
-- include_tasks: update_admin_password.yml
+- name: Update Admin Password
+  include_tasks: update_admin_password.yml
   when: new_nexus_admin_password is defined
