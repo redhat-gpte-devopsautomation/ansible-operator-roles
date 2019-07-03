@@ -35,6 +35,7 @@
     - create_repo_npm_hosted
     - create_repo_npm_proxy
     - create_repo_npm_group
+    - set_anon_access
 
 # Delete default repos
 - name: Delete default repos
@@ -72,6 +73,9 @@
 - name: Create NPM Groups
   include_tasks: create_repo_npm_group.yml
   with_items: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
+
+- name: Turn on Anonymous Access
+  include_tasks: set_anon_access.yml
 
 - name: Update Admin Password
   include_tasks: update_admin_password.yml
