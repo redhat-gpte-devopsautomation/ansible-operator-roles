@@ -22,6 +22,7 @@
         path: /tmp/admin.password
         state: absent
 
+
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
   include_tasks: declare_script.yml
@@ -80,3 +81,20 @@
 - name: Update Admin Password
   include_tasks: update_admin_password.yml
   when: new_nexus_admin_password is defined
+
+- name: Change default password
+  set_fact:
+    _nexus_admin_password: "{{ new_nexus_admin_password }}"
+  when: new_nexus_admin_password is defined
+
+- name: Save password in pod status
+  k8s:
+    api_version: v1
+    kind: Pod
+    name: "{{ nexus_pod.result.metadata.name }}"
+    namespace: "{{ nexus_pod.result.metadata.namespace }}"
+    merge_type: strategic-merge
+    definition:
+      metadata:
+        annotations:
+          admin_password: "{{ _nexus_admin_password }}"
