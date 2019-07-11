@@ -5,10 +5,14 @@
 - name: Attempt to fetch password file
   shell: "oc cp {{ _nexus_name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
   ignore_errors: true
-  register: oc_copy
+
+- name: Check for temporary file
+  stat:
+    path: /tmp/admin.password
+  register: password_file_result
 
 - name: Get Admin Password for 3.17+
-  when: oc_copy.rc == 0
+  when: password_file_result.stat.exists
   block:
     - name: Read file
       slurp:
@@ -88,7 +92,7 @@
   when: new_nexus_admin_password is defined
 
 # The following will fail unless this is running as an operator
-- name: Save password in pod status
+- name: Save password in custom resource status
   k8s_status:
     api_version: gpte.opentlc.com/v1alpha1
     kind: Nexus
