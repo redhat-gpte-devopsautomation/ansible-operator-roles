@@ -87,14 +87,13 @@
     _nexus_admin_password: "{{ new_nexus_admin_password }}"
   when: new_nexus_admin_password is defined
 
+# The following will fail unless this is running as an operator
 - name: Save password in pod status
-  k8s:
-    api_version: v1
-    kind: Pod
-    name: "{{ nexus_pod.result.metadata.name }}"
-    namespace: "{{ nexus_pod.result.metadata.namespace }}"
-    merge_type: strategic-merge
-    definition:
-      metadata:
-        annotations:
-          admin_password: "{{ _nexus_admin_password }}"
+  k8s_status:
+    api_version: gpte.opentlc.com/v1alpha1
+    kind: Nexus
+    name: "{{ meta.name }}"
+    namespace: "{{ meta.namespace }}"
+    status:
+      admin_password: "{{ _nexus_admin_password }}"
+  ignore_errors: true
