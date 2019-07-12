@@ -11,8 +11,8 @@ _nexus_memory_limit: 2Gi
 _nexus_cpu_request: 500m
 _nexus_cpu_limit: 2
 _nexus_wait_for_init: True
-_nexus_image: docker.io/sonatype/nexus3
-#_nexus_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
+#_nexus_image: docker.io/sonatype/nexus3
+_nexus_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
 _nexus_image_tag: latest
 
 _nexus_admin_password: admin123
