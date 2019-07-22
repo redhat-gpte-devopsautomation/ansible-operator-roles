@@ -9,4 +9,5 @@
     method: POST
     status_code: 200,204
     force_basic_auth: yes
+    validate_certs: no
     body: "{{ args | to_json }}"
