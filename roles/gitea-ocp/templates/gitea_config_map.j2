@@ -14,6 +14,9 @@ data:
     INSTALL_LOCK   = true
     SECRET_KEY     = ${GITEA_SECRET_KEY}
 
+    [oauth2]
+    ENABLE = false
+
     [database]
     DB_TYPE  = postgres
     HOST     = "{{ _gitea_postgresql_service_name }}:{{ _gitea_postgresql_port }}"
