@@ -40,12 +40,12 @@
   k8s:
     state: "{{ _gitea_state }}"
     definition: "{{ lookup('template', './templates/gitea_route.j2') | from_yaml }}"
-  register: gitea_route_result
+  register: r_gitea_route
 
 - name: Store Gitea Route Hostname
   set_fact:
-    gitea_route: "{{ gitea_route_result.result.spec.host }}"
-  when: gitea_route_result.method == "create" or gitea_route_result.method == "patch"
+    _gitea_actual_route: "{{ r_gitea_route.result.spec.host }}"
+  when: r_gitea_route.method == "create" or r_gitea_route.method == "patch"
 
 - name: Set Gitea PersistentVolumeClaim to {{ _gitea_state }}
   k8s:

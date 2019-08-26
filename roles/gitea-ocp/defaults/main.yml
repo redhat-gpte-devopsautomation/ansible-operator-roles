@@ -19,3 +19,5 @@ _gitea_cpu_limit: 500m
 _gitea_wait_for_init: true
 _gitea_image: quay.io/gpte-devops-automation/gitea
 _gitea_image_tag: latest
+# Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
+_gitea_route: ""
