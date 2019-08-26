@@ -6,7 +6,7 @@ metadata:
   labels:
     app: "{{ _gitea_name }}"
 spec:
-{% if _gitea_route|d("") <> "" %}
+{% if _gitea_route|d("") != "" %}
   host: "{{ _gitea_route }}"
 {% endif %}
   to:
