@@ -14,4 +14,5 @@ ansible-playbook ./playbooks/gitea.yaml \
   -e "gitea_volume_size=3Gi" \
   -e "gitea_ssl=True" \
   -e "gitea_image_tag=latest" \
+  -e "gitea_route=gitea.apps.shared-dev.dev.openshift.opentlc.com" \
   -e '{"meta": {"namespace":"xyz-gitea","name":"gitea"}}'
