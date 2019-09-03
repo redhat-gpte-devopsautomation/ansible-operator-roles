@@ -1,156 +1,31 @@
 ---
 # tasks file for postgresql-ocp
 
-- name: Set Postgresql Secret to {{ _postgresql_state }}
-  k8s:
-    state: "{{_postgresql_state}}"
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{_postgresql_name}}"
-        namespace: "{{_postgresql_namespace}}"
-      stringData:
-        database-name: "{{_postgresql_database_name}}"
-        database-user: "{{_postgresql_user}}"
-        database-password: "{{_postgresql_password}}"
-
-- name: Set Postgresql Service to {{ _postgresql_state }}
-  k8s:
-    state: "{{_postgresql_state}}"
-    definition:
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: "{{_postgresql_name}}"
-        namespace: "{{_postgresql_namespace}}"
-      spec:
-        ports:
-        - name: postgresql
-          port: 5432
-          protocol: TCP
-          targetPort: 5432
-        selector:
-          app: "{{ _postgresql_name }}"
-        sessionAffinity: None
-        type: ClusterIP
-
-- name: Set Postgresql PersistentVolumeClaim to {{ _postgresql_state }}
+- name: Set OpenShift Objects for Postgresql to {{ _postgresql_state }}
   k8s:
     state: "{{ _postgresql_state }}"
-    definition:
-      apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: "{{ _postgresql_name }}-pvc"
-        namespace: "{{ _postgresql_namespace }}"
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ _postgresql_volume_size }}"
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/secret.j2
+  - ./templates/service.j2
+  - ./templates/persistent_volume_claim.j2
+  - ./templates/deployment.j2
 
-- name: Set Postgresql Pod to {{ _postgresql_state }}
-  k8s:
-    state: "{{ _postgresql_state }}"
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: "{{ _postgresql_name }}"
-        namespace: "{{ _postgresql_namespace }}"
-        labels:
-          app: "{{ _postgresql_name }}"
-      spec:
-        containers:
-        - env:
-          - name: POSTGRESQL_USER
-            valueFrom:
-              secretKeyRef:
-                key: database-user
-                name: "{{ _postgresql_name }}"
-          - name: POSTGRESQL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                key: database-password
-                name: "{{ _postgresql_name }}"
-          - name: POSTGRESQL_DATABASE
-            valueFrom:
-              secretKeyRef:
-                key: database-name
-                name: "{{ _postgresql_name }}"
-          image: "{{ _postgresql_image }}:{{ _postgresql_image_tag }}"
-          imagePullPolicy: IfNotPresent
-          livenessProbe:
-            exec:
-              command:
-              - /usr/libexec/check-container
-              - --live
-            initialDelaySeconds: 120
-            timeoutSeconds: 10
-          name: postgresql
-          ports:
-          - containerPort: 5432
-            protocol: TCP
-          readinessProbe:
-            exec:
-              command:
-              - /usr/libexec/check-container
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
-          resources:
-            requests:
-              cpu: "{{ _postgresql_cpu_request }}"
-              memory: "{{ _postgresql_memory_request }}"
-            limits:
-              cpu: "{{ _postgresql_cpu_limit }}"
-              memory: "{{ _postgresql_memory_limit }}"
-          volumeMounts:
-          - mountPath: /var/lib/pgsql/data
-            name: postgresql-data
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        volumes:
-        - name: postgresql-data
-          persistentVolumeClaim:
-            claimName: "{{ _postgresql_name }}-pvc"
-
-- name: Pause to wait for pod to be in the system
+- name: Wait until application is available
   when:
     - _postgresql_state == "present"
     - _postgresql_wait_for_init|bool
-  pause:
-    seconds: 5
-
-- name: Verify that the PostgreSQL Pod is running
-  when:
-    - _postgresql_state == "present"
-    - _postgresql_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
+  k8s_facts:
+    api_version: apps/v1
+    kind: Deployment
     name: "{{ _postgresql_name }}"
     namespace: "{{ _postgresql_namespace }}"
-  register: postgresql_pod
+  register: r_deployment
   until:
-  - postgresql_pod.result.status.phase == "Running"
+  - r_deployment.resources[0].status.availableReplicas is defined
+  - r_deployment.resources[0].status.availableReplicas == 1
   retries: 50
   delay: 10
-  changed_when: false
-
-- name: Verify that the Postgresql Pod is ready
-  when:
-    - _postgresql_state == "present"
-    - _postgresql_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
-    name: "{{ _postgresql_name }}"
-    namespace: "{{ _postgresql_namespace }}"
-  register: postgresql_pod
-  until:
-  - postgresql_pod.result.status.containerStatuses[0].ready|d(False)|bool
-  retries: 25
-  delay: 5
-  changed_when: false
