@@ -8,6 +8,9 @@ metadata:
   labels:
     app: "{{ _nexus_name }}"
 spec:
+{% if _nexus_route|d("") <> "" %}
+  host: "{{ _nexus_route }}"
+{% endif %}
   to:
     kind: Service
     name: "{{ _nexus_name }}"

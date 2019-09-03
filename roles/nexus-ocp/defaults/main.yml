@@ -14,6 +14,10 @@ _nexus_wait_for_init: True
 #_nexus_image: docker.io/sonatype/nexus3
 _nexus_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
 _nexus_image_tag: latest
+# Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
+_nexus_route: ""
+# Set to a valid route for the cluster to make a nicer registry route than svc-project.apps. Leave empty for default route
+_nexus_registry_route: ""
 
 _nexus_admin_password: admin123
 _nexus_delete_default_repos: true

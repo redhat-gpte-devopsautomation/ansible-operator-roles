@@ -55,7 +55,7 @@
   k8s:
     state: "{{ _nexus_state }}"
     definition: "{{ lookup('template', './templates/nexus_route.j2') | from_yaml }}"
-  register: nexus_route
+  register: r_nexus_route
 
 - name: Set Nexus Registry Route to {{ _nexus_state }}
   k8s:
@@ -181,4 +181,4 @@
   include_tasks: setup.yml
   when: nexus_pod_changed.method == "create"
   vars:
-    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ nexus_route.result.spec.host }}"
+    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ r_nexus_route.result.spec.host }}"
