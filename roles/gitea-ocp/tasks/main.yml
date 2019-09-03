@@ -1,9 +1,5 @@
 ---
 # tasks file for Gitea
-- name: Set Fallback Facts for gitea_route
-  set_fact:
-    gitea_route: "dummy"
-
 - name: Set OpenShift Objects for Gitea to {{ _gitea_state }}
   k8s:
     state: "{{ _gitea_state }}"
