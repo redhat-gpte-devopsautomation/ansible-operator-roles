@@ -44,7 +44,7 @@ spec:
           successThreshold: 1
           failureThreshold: 3
         resources:
-          request:
+          requests:
             cpu: "{{ _gitea_cpu_request }}"
             memory: "{{ _gitea_memory_request}}"
           limits:
