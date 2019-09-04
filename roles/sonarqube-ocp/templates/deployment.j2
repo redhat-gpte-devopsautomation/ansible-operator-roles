@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: "{{ _sonarqube_name }}"
   namespace: "{{ _sonarqube_namespace }}"
+  labels:
+    tuned.openshift.io/elasticsearch: "true"
 spec:
   replicas: 1
   selector:
@@ -14,6 +16,7 @@ spec:
     metadata:
       labels:
         app: "{{ _sonarqube_name }}"
+        tuned.openshift.io/elasticsearch: "true"
     spec:
       serviceAccountName: "{{ _sonarqube_name }}"
       containers:
