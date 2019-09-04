@@ -23,14 +23,9 @@
       _postgresql_user: "giteauser"
       _postgresql_password: "giteapassword"
       _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
-      _postgresql_image: "{{ postgresql_image|d('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
+      _postgresql_image: "{{ postgresql_image | d('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
       _postgresql_image_tag: "{{ postgresql_image_tag|d('latest') }}"
 
-  # - name: Set Gitea Service name to default value
-  #   set_fact:
-  #     gitea_service_name: "{{ meta.name }}"
-  #   when:
-  #     gitea_service_name is not defined
   - name: Set up Gitea
     include_role:
       name: ./roles/gitea-ocp
