@@ -1,148 +1,33 @@
 ---
 # Tasks file for SonarQube
-- name: Set SonarQube Service to {{ _sonarqube_state }}
+- name: Set OpenShift objects for SonarQube to {{ _sonarqube_state }}
   k8s:
     state: "{{ _sonarqube_state }}"
-    definition:
-      kind: Service
-      apiVersion: v1
-      metadata:
-        name: "{{ _sonarqube_name }}"
-        namespace: "{{ _sonarqube_namespace }}"
-        labels:
-          app: "{{ _sonarqube_name }}"
-      spec:
-        selector:
-          app: "{{ _sonarqube_name }}"
-        ports:
-        - name: sonarqube
-          port: 9000
-          protocol: TCP
-          targetPort: 9000
-        sessionAffinity: None
-        type: ClusterIP
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/service_account.j2
+  - ./templates/persistent_volume_claim.j2
+  - ./templates/service.j2
+  - ./templates/route.j2
+  - ./templates/deployment.j2
 
-- name: Set SonarQube Route to {{ _sonarqube_state }}
-  k8s:
-    state: "{{ _sonarqube_state }}"
-    definition: "{{ lookup('template', './templates/sonarqube_route.j2') | from_yaml }}"
-  register: sonarqube_route_result
-
-- name: Set SonarQube PersistentVolumeClaim to {{ _sonarqube_state }}
-  k8s:
-    state: "{{ _sonarqube_state }}"
-    definition:
-      kind: PersistentVolumeClaim
-      apiVersion: v1
-      metadata:
-        name: "{{ _sonarqube_name }}-pvc"
-        namespace: "{{ _sonarqube_namespace }}"
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ _sonarqube_volume_size }}"
-
-- name: Set SonarQube Pod to {{ _sonarqube_state }}
-  k8s:
-    state: "{{ _sonarqube_state }}"
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: "{{ _sonarqube_name }}"
-        namespace: "{{ _sonarqube_namespace }}"
-        labels:
-          app: "{{ _sonarqube_name }}"
-      spec:
-        containers:
-        - image: "{{ _sonarqube_image }}:{{ _sonarqube_image_tag }}"
-          imagePullPolicy: IfNotPresent
-          name: sonarqube
-          ports:
-          - containerPort: 9000
-            protocol: TCP
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /about
-              port: 9000
-              scheme: HTTP
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          livenessProbe:
-            exec:
-              command:
-              - echo
-              - ok
-            failureThreshold: 3
-            initialDelaySeconds: 40
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          resources:
-            request:
-              cpu: "{{ _sonarqube_cpu_request }}"
-              memory: "{{ _sonarqube_memory_request}}"
-            limits:
-              cpu: "{{ _sonarqube_cpu_limit}}"
-              memory: "{{ _sonarqube_memory_limit }}"
-          env:
-          - name: SONARQUBE_JDBC_PASSWORD
-            value: "{{ _sonarqube_postgresql_password }}"
-          - name: SONARQUBE_JDBC_URL
-            value: "jdbc:postgresql://{{ _sonarqube_postgresql_service_name }}/{{ _sonarqube_postgresql_database_name }}"
-          - name: SONARQUBE_JDBC_USERNAME
-            value: "{{ _sonarqube_postgresql_user }}"
-          volumeMounts:
-          - name: sonarqube-data
-            mountPath: /opt/sonarqube/data
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: sonarqube-data
-          persistentVolumeClaim:
-            claimName: "{{ _sonarqube_name }}-pvc"
-
-- name: Pause to wait for pod to be in the system
+- name: Wait until application is available
   when:
     - _sonarqube_state == "present"
     - _sonarqube_wait_for_init|bool
-  pause:
-    seconds: 5
-
-- name: Verify that the Sonarqube Pod is running
-  when:
-    - _sonarqube_state == "present"
-    - _sonarqube_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
+  k8s_facts:
+    api_version: apps/v1
+    kind: Deployment
     name: "{{ _sonarqube_name }}"
     namespace: "{{ _sonarqube_namespace }}"
-  register: sonarqube_pod
+  register: r_deployment
   until:
-  - sonarqube_pod.result.status.phase == "Running"
+  - r_deployment.resources[0].status.availableReplicas is defined
+  - r_deployment.resources[0].status.availableReplicas == 1
   retries: 50
   delay: 10
-  changed_when: false
-
-- name: Verify that the Sonarqube Pod is ready
-  when:
-    - _sonarqube_state == "present"
-    - _sonarqube_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
-    name: "{{ _sonarqube_name }}"
-    namespace: "{{ _sonarqube_namespace }}"
-  register: sonarqube_pod
-  until:
-  - sonarqube_pod.result.status.containerStatuses[0].ready|d(False)|bool
-  retries: 25
-  delay: 5
-  changed_when: false
+  ignore_errors: yes
+ 

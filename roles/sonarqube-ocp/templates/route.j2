@@ -9,6 +9,9 @@ spec:
   to:
     kind: Service
     name: "{{ _sonarqube_name }}"
+{% if _sonarqube_route|d("") != "" %}
+  host: "{{ _sonarqube_route }}"
+{% endif %}
 {% if _sonarqube_ssl|d(False)|bool %}
   tls:
     insecureEdgeTerminationPolicy: Redirect

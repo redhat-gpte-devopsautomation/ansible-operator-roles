@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ _sonarqube_name }}"
+  namespace: "{{ _sonarqube_namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ _sonarqube_name }}"
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: "{{ _sonarqube_name }}"
+    spec:
+      serviceAccountName: "{{ _sonarqube_name }}"
+      containers:
+      - name: sonarqube
+        image: "{{ _sonarqube_image }}:{{ _sonarqube_image_tag }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /about
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 20
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /about
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 40
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          request:
+            cpu: "{{ _sonarqube_cpu_request }}"
+            memory: "{{ _sonarqube_memory_request}}"
+          limits:
+            cpu: "{{ _sonarqube_cpu_limit}}"
+            memory: "{{ _sonarqube_memory_limit }}"
+        env:
+        - name: SONARQUBE_JDBC_PASSWORD
+          value: "{{ _sonarqube_postgresql_password }}"
+        - name: SONARQUBE_JDBC_URL
+          value: "jdbc:postgresql://{{ _sonarqube_postgresql_service_name }}/{{ _sonarqube_postgresql_database_name }}"
+        - name: SONARQUBE_JDBC_USERNAME
+          value: "{{ _sonarqube_postgresql_user }}"
+        volumeMounts:
+        - name: sonarqube-data
+          mountPath: /opt/sonarqube/data
+      volumes:
+      - name: sonarqube-data
+        persistentVolumeClaim:
+          claimName: "{{ _sonarqube_name }}-pvc"

@@ -15,5 +15,8 @@ _sonarqube_memory_limit: 3Gi
 _sonarqube_cpu_request: 1
 _sonarqube_cpu_limit: 2
 _sonarqube_wait_for_init: true
-_sonarqube_image: docker.io/wkulhanek/sonarqube
+_sonarqube_image: quay.io/gpte-devops-automation/sonarqube
 _sonarqube_image_tag: latest
+
+# Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
+_sonarqube_route: ""
