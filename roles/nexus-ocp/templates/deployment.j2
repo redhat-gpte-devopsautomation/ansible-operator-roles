@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ _nexus_name }}"
+  namespace: "{{ _nexus_namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ _nexus_name }}"
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: "{{ _nexus_name }}"
+    spec:
+      serviceAccountName: "{{ _nexus_name }}"
+      containers:
+      - name: nexus
+        image: "{{ _nexus_image }}:{{ _nexus_image_tag }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          protocol: TCP
+        - containerPort: 5000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 1
+          periodSeconds: 20
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 120
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: "{{ _nexus_cpu_request }}"
+            memory: "{{ _nexus_memory_request}}"
+          limits:
+            cpu: "{{ _nexus_cpu_limit}}"
+            memory: "{{ _nexus_memory_limit }}"
+        volumeMounts:
+        - name: nexus-data
+          mountPath: /nexus-data
+      volumes:
+      - name: nexus-data
+        persistentVolumeClaim:
+          claimName: "{{ _nexus_name }}-pvc"

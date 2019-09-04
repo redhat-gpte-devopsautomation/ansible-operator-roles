@@ -12,5 +12,7 @@ ansible-playbook ./playbooks/nexus.yaml \
   -e "nexus_volume_size=5Gi" \
   -e "nexus_ssl=True" \
   -e "nexus_image_tag=latest" \
-  -e '{"meta": {"namespace":"nexus-test","name":"nexus"}}' \
-  -e "new_nexus_admin_password=r3dh@t987!"
+  -e "nexus_route=nexus.apps.shared-dev.dev.openshift.opentlc.com" \
+  -e "nexus_registry_route=nexus-registry.apps.shared-dev.dev.openshift.opentlc.com" \
+  -e "new_nexus_admin_password=redhat" \
+  -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}'

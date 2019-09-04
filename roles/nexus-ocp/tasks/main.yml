@@ -1,184 +1,63 @@
 ---
 # tasks file for Nexus
-- name: Debug old parameters
-  debug:
-    msg: "_nexus_volume_size: {{ _nexus_volume_size }}, _nexus_ssl: {{ _nexus_ssl }}"
-- name: Debug parameters things
-  debug:
-    msg: "_nexus_cpu_request: {{ _nexus_cpu_request }}, _nexus_memory_request: {{ _nexus_memory_request }}, _nexus_cpu_limit: {{ _nexus_cpu_limit }}, _nexus_memory_limit: {{ _nexus_memory_limit }}"
 
-- name: Set Nexus Service to {{ _nexus_state }}
+- name: Set OpenShift Objects for Nexus to {{ _nexus_state }}
   k8s:
     state: "{{ _nexus_state }}"
-    definition:
-      kind: Service
-      apiVersion: v1
-      metadata:
-        name: "{{ _nexus_name }}"
-        namespace: "{{ _nexus_namespace }}"
-        labels:
-          app: "{{ _nexus_name }}"
-      spec:
-        selector:
-          app: "{{ _nexus_name }}"
-        ports:
-        - name: "nexus-tcp"
-          port: 8081
-          protocol: TCP
-          targetPort: 8081
-        sessionAffinity: None
-        type: ClusterIP
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/service_account.j2
+  - ./templates/service.j2
+  - ./templates/registry_service.j2
+  - ./templates/route.j2
+  - ./templates/registry_route.j2
+  - ./templates/persistent_volume_claim.j2
 
-- name: Set Nexus Registry Service to {{ _nexus_state }}
+- name: Set Nexus Deployment to {{ _nexus_state }}
   k8s:
     state: "{{ _nexus_state }}"
-    definition:
-      kind: Service
-      apiVersion: v1
-      metadata:
-        name: "{{ _nexus_name }}-registry"
-        namespace: "{{ _nexus_namespace }}"
-        labels:
-          app: "{{ _nexus_name }}"
-      spec:
-        selector:
-          app: "{{ _nexus_name }}"
-        ports:
-        - name: "nexus-registry-tcp"
-          port: 5000
-          protocol: TCP
-          targetPort: 5000
-        sessionAffinity: None
-        type: ClusterIP
+    definition: "{{ lookup('template', './templates/deployment.j2' ) | from_yaml }}"
+  register: r_nexus_changed
 
-- name: Set Nexus Route to {{ _nexus_state }}
-  k8s:
-    state: "{{ _nexus_state }}"
-    definition: "{{ lookup('template', './templates/nexus_route.j2') | from_yaml }}"
-  register: r_nexus_route
-
-- name: Set Nexus Registry Route to {{ _nexus_state }}
-  k8s:
-    state: "{{ _nexus_state }}"
-    definition: "{{ lookup('template', './templates/nexus_registry_route.j2') | from_yaml }}"
-
-- name: Set Nexus PersistentVolumeClaim to {{ _nexus_state }}
-  k8s:
-    state: "{{ _nexus_state }}"
-    definition:
-      kind: PersistentVolumeClaim
-      apiVersion: v1
-      metadata:
-        name: "{{ _nexus_name }}-pvc"
-        namespace: "{{ _nexus_namespace }}"
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ _nexus_volume_size }}"
-
-- name: Set Nexus Pod to {{ _nexus_state }}
-  k8s:
-    state: "{{ _nexus_state }}"
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: "{{ _nexus_name }}"
-        namespace: "{{ _nexus_namespace }}"
-        labels:
-          app: "{{ _nexus_name }}"
-      spec:
-        containers:
-        - image: "{{ _nexus_image }}:{{ _nexus_image_tag }}"
-          imagePullPolicy: IfNotPresent
-          name: nexus
-          ports:
-          - containerPort: 8081
-            protocol: TCP
-          - containerPort: 5000
-            protocol: TCP
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8081
-              scheme: HTTP
-            initialDelaySeconds: 60
-            timeoutSeconds: 1
-            periodSeconds: 20
-            successThreshold: 1
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8081
-              scheme: HTTP
-            initialDelaySeconds: 120
-            timeoutSeconds: 1
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-          resources:
-            requests:
-              cpu: "{{ _nexus_cpu_request }}"
-              memory: "{{ _nexus_memory_request }}"
-            limits:
-              cpu: "{{ _nexus_cpu_limit }}"
-              memory: "{{ _nexus_memory_limit }}"
-          volumeMounts:
-          - name: nexus-data
-            mountPath: /nexus-data
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: nexus-data
-          persistentVolumeClaim:
-            claimName: "{{ _nexus_name }}-pvc"
-  register: nexus_pod_changed
-
-- name: Pause to wait for pod to be in the system
+- name: Wait until application is available
   when:
     - _nexus_state == "present"
     - _nexus_wait_for_init|bool
-  pause:
-    seconds: 5
-
-- name: Verify that the Nexus Pod is running
-  when:
-    - _nexus_state == "present"
-    - _nexus_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
+  k8s_facts:
+    api_version: apps/v1
+    kind: Deployment
     name: "{{ _nexus_name }}"
     namespace: "{{ _nexus_namespace }}"
-  register: nexus_pod
+  register: r_deployment
   until:
-  - nexus_pod.result.status.phase == "Running"
+  - r_deployment.resources[0].status.availableReplicas is defined
+  - r_deployment.resources[0].status.availableReplicas == 1
   retries: 50
   delay: 10
-  changed_when: false
+  ignore_errors: yes
 
-- name: Wait for the Nexus Pod to be ready
+# Get Nexus Route
+- name: Get Nexus Route Hostname
   when:
-    - _nexus_state == "present"
-    - _nexus_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
+  - _nexus_state == "present"
+  k8s_facts:
+    api_version: route.openshift.io/v1
+    kind: Route
     name: "{{ _nexus_name }}"
     namespace: "{{ _nexus_namespace }}"
-  register: nexus_pod
-  until:
-  - nexus_pod.result.status.containerStatuses[0].ready|d(False)|bool
-  retries: 50
-  delay: 10
-  changed_when: false
+  register: r_route
+
+- name: Store Nexus Route Hostname
+  when:
+  - _nexus_state == "present"
+  set_fact:
+    _nexus_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
 
 - name: Perform Initial Nexus Configuration
   include_tasks: setup.yml
-  when: nexus_pod_changed.method == "create"
+  when: r_nexus_changed.method == "create"
   vars:
-    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ r_nexus_route.result.spec.host }}"
+    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ _nexus_actual_route }}"

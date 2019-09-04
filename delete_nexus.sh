@@ -6,4 +6,4 @@
 
 ansible-playbook ./playbooks/nexus.yaml \
   -e "_nexus_state=absent" \
-  -e '{"meta": {"namespace":"nexus-test","name":"nexus"}}'
+  -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}'

@@ -26,6 +26,8 @@
       _nexus_volume_size: "{{ nexus_volume_size|d('4Gi') }}"
       _nexus_ssl: "{{ nexus_ssl|d('False') }}"
       _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
+      _nexus_route: "{{ nexus_route | d('') }}"
+      _nexus_registry_route: "{{ nexus_registry_route | d('') }}"
       _nexus_cpu_request: "{{ nexus_cpu_request|d('500m') }}"
       _nexus_cpu_limit: "{{ nexus_cpu_limit|d('2') }}"
       _nexus_memory_request: "{{ nexus_memory_request|d('1Gi') }}"

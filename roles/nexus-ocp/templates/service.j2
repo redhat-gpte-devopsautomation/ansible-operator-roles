@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "{{ _nexus_name }}"
+  namespace: "{{ _nexus_namespace }}"
+  labels:
+    app: "{{ _nexus_name }}"
+spec:
+  selector:
+    app: "{{ _nexus_name }}"
+  ports:
+  - name: "nexus-tcp"
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  sessionAffinity: None
+  type: ClusterIP

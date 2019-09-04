@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "{{ _nexus_name }}-registry"
+  namespace: "{{ _nexus_namespace }}"
+  labels:
+    app: "{{ _nexus_name }}"
+spec:
+  selector:
+    app: "{{ _nexus_name }}"
+  ports:
+  - name: "nexus-registry-tcp"
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  sessionAffinity: None
+  type: ClusterIP
