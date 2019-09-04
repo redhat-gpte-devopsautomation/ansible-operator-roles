@@ -44,7 +44,7 @@ spec:
           successThreshold: 1
           failureThreshold: 3
         resources:
-          request:
+          requests:
             cpu: "{{ _sonarqube_cpu_request }}"
             memory: "{{ _sonarqube_memory_request}}"
           limits:
