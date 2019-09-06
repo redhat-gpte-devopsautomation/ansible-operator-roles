@@ -1,15 +1,6 @@
 ---
 # Tasks to setup Nexus the first time
 
-# If the admin password is defined and set we need to set it
-# later in this playbook
-- name: Set new admin password if admin password is defined
-  when:
-  - _nexus_admin_password is defined
-  - _nexus_admin_password | length > 0
-  set_fact:
-    _nexus_new_admin_password: "{{ _nexus_admin_password }}"
-
 # Discover admin password for 3.17+
 - name: Get name of nexus pod
   k8s_facts:
@@ -20,7 +11,7 @@
   register: r_nexus_pod
 
 - name: Attempt to fetch password file
-  shell: "oc cp {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
+  shell: "oc cp {{ _nexus_namespace}}/{{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/admin.password /tmp/admin.password"
   ignore_errors: true
 
 - name: Check for temporary file
@@ -28,20 +19,25 @@
     path: /tmp/admin.password
   register: r_password_file
 
-- name: Read admin password for 3.17+
+- name: Get admin password for 3.17+
   when: r_password_file.stat.exists
-  slurp:
-    src: /tmp/admin.password
-  register: r_admin_password
-- name: Remove temporary file for 3.17+
-  when: r_password_file.stat.exists
-  file:
-    path: /tmp/admin.password
-    state: absent
-- name: Set current admin password for 3.17+
-  when: r_password_file.stat.exists
+  block:
+  - name: Read admin password for 3.17+
+    slurp:
+      src: /tmp/admin.password
+    register: r_admin_password
+  - name: Remove temporary file for 3.17+
+    file:
+      path: /tmp/admin.password
+      state: absent
+  - name: Set current admin password for 3.17+
+    set_fact:
+      _nexus_current_password: "{{ r_admin_password['content']|b64decode }}"
+
+- name: Set Current password to admin password if password file does not exist
+  when: not r_password_file.stat.exists
   set_fact:
-    _nexus_admin_password: "{{ r_admin_password['content']|b64decode }}"
+    _nexus_current_password: "{{ _nexus_admin_password }}"
 
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
@@ -99,11 +95,11 @@
   include_tasks: set_anon_access.yml
 
 - name: Update Admin Password
-  when: _nexus_new_admin_password is defined
+  when: _nexus_new_admin_password | length > 0
   include_tasks: update_admin_password.yml
 
 - name: Change default password
-  when: _nexus_new_admin_password is defined
+  when: _nexus_new_admin_password | length > 0
   set_fact:
     _nexus_admin_password: "{{ _nexus_new_admin_password }}"
 
@@ -116,5 +112,5 @@
     name: "{{ meta.name }}"
     namespace: "{{ meta.namespace }}"
     status:
-      admin_password: "{{ _nexus_admin_password }}"
+      admin_password: "{{ _nexus_new_admin_password }}"
   ignore_errors: true

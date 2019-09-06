@@ -1,12 +1,9 @@
 ---
-- name: Debug
-  debug:
-    msg: "Password: {{_nexus_admin_password}}"
 - name: Calling Groovy script {{ script_name }}
   uri:
     url: "{{ nexus_url }}/service/rest/v1/script/{{ script_name }}/run"
     user: admin
-    password: "{{ _nexus_admin_password }}"
+    password: "{{ _nexus_current_password }}"
     headers:
       Content-Type: "text/plain"
     method: POST

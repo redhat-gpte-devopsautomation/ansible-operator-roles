@@ -19,10 +19,18 @@ _nexus_route: ""
 # Set to a valid route for the cluster to make a nicer registry route than svc-project.apps. Leave empty for default route
 _nexus_registry_route: ""
 
-# Internal variable. Do not change
-_nexus_actual_route: ""
-
+# Nexus Admin Password. Used for Nexus versions before 3.17
 _nexus_admin_password: admin123
+
+# New Nexus Admin Password: Set the admin password for
+# Nexus Versions starting with 3.17
+# The Nexus Admin password will be changed to this value from the
+# default generated password
+_nexus_new_admin_password: admin123
+
+# --- Repositories ---
+
+# Delete all default Nexus repositories during initial setup
 _nexus_delete_default_repos: true
 
 _nexus_repos_maven_defaults:
@@ -46,7 +54,6 @@ _nexus_repos_maven_hosted:
   - name: releases
     version_policy: release
     write_policy: allow_once
-# Use "write_policy: allow" to allow redeploy or releases
 
 _nexus_repos_maven_group:
   - name: maven-all-public
@@ -81,3 +88,8 @@ _nexus_repos_npm_group: []
   #   member_repos:
   #     - npm-internal
   #     - npm-proxy
+
+# --- Internal Variables ---
+# --- Do not change --------
+_nexus_actual_route: ""
+_nexus_current_password: ""

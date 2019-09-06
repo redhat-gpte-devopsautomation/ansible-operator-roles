@@ -14,5 +14,5 @@ ansible-playbook ./playbooks/nexus.yaml \
   -e "nexus_image_tag=latest" \
   -e "nexus_route=nexus.apps.shared-dev.dev.openshift.opentlc.com" \
   -e "nexus_registry_route=nexus-registry.apps.shared-dev.dev.openshift.opentlc.com" \
-  -e "new_nexus_admin_password=redhat" \
+  -e "nexus_new_admin_password=redhat" \
   -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}'
