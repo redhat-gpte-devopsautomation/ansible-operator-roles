@@ -2,8 +2,17 @@
 # Tasks to setup Nexus the first time
 
 # Discover admin password for 3.17+
+- name: Get name of nexus pod
+  k8s_facts:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ _nexus_namespace }}"
+    label_selectors:
+      app: "{{ _nexus_name }}"
+  register: r_nexus_pod
+
 - name: Attempt to fetch password file
-  shell: "oc cp {{ _nexus_name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
+  shell: "oc cp {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
   ignore_errors: true
 
 - name: Check for temporary file
