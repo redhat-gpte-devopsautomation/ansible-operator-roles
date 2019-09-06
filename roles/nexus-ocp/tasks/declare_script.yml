@@ -1,13 +1,4 @@
 ---
-#- name: Removing previously declared Groovy script {{ item }}
-  # uri:
-  #   url: "{{ nexus_url }}/service/siesta/rest/v1/script/{{ item }}"
-  #   user: admin
-  #   password: "{{ _nexus_admin_password }}"
-  #   method: DELETE
-  #   force_basic_auth: yes
-  #   status_code: 204,404
-
 - name: Declaring Groovy script {{ item }}
   uri:
     url: "{{ nexus_url }}/service/rest/v1/script"

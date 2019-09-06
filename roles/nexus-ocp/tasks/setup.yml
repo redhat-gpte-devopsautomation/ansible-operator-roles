@@ -26,22 +26,22 @@
 - name: Check for temporary file
   stat:
     path: /tmp/admin.password
-  register: password_file_result
+  register: r_password_file
 
-- name: Get Admin Password for 3.17+
-  when: password_file_result.stat.exists
-  block:
-  - name: Read file
-    slurp:
-      src: /tmp/admin.password
-    register: r_admin_password
-  - name: Save admin password
-    set_fact:
-      _nexus_admin_password: "{{ r_admin_password['content']|b64decode }}"
-  - name: Remove temporary file
-    file:
-      path: /tmp/admin.password
-      state: absent
+- name: Read admin password for 3.17+
+  when: r_password_file.stat.exists
+  slurp:
+    src: /tmp/admin.password
+  register: r_admin_password
+- name: Remove temporary file for 3.17+
+  when: r_password_file.stat.exists
+  file:
+    path: /tmp/admin.password
+    state: absent
+- name: Set current admin password for 3.17+
+  when: r_password_file.stat.exists
+  set_fact:
+    _nexus_admin_password: "{{ r_admin_password['content']|b64decode }}"
 
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
