@@ -46,6 +46,7 @@ _nexus_repos_maven_hosted:
   - name: releases
     version_policy: release
     write_policy: allow_once
+# Use "write_policy: allow" to allow redeploy or releases
 
 _nexus_repos_maven_group:
   - name: maven-all-public

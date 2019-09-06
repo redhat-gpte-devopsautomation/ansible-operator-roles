@@ -34,7 +34,6 @@
         path: /tmp/admin.password
         state: absent
 
-
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
   include_tasks: declare_script.yml
@@ -53,7 +52,7 @@
 # Delete default repos
 - name: Delete default repos
   include_tasks: delete_repo.yml
-  when: _nexus_delete_default_repos
+  when: _nexus_delete_default_repos | bool
   with_items:
     - maven-central
     - maven-public
