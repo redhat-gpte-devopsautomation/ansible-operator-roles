@@ -1,6 +1,15 @@
 ---
 # Tasks to setup Nexus the first time
 
+# If the admin password is defined and set we need to set it
+# later in this playbook
+- name: Set new admin password if admin password is defined
+  when:
+  - _nexus_admin_password is defined
+  - _nexus_admin_password | length > 0
+  set_fact:
+    _nexus_new_admin_password: "{{ _nexus_admin_password }}"
+
 # Discover admin password for 3.17+
 - name: Get name of nexus pod
   k8s_facts:
@@ -13,15 +22,6 @@
 - name: Attempt to fetch password file
   shell: "oc cp {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/admin.password /tmp/admin.password -n {{ _nexus_namespace }}"
   ignore_errors: true
-
-# If the admin password is defined and set we need to set it
-# later in this playbook
-- name: Set New Admin Password if admin password is defined
-  when:
-  - _nexus_admin_password is defined
-  - _nexus_admin_password | length > 0
-  set_fact:
-    _new_nexus_admin_password: "{{ _nexus_admin_password }}"
 
 - name: Check for temporary file
   stat:
@@ -108,6 +108,7 @@
     _nexus_admin_password: "{{ _nexus_new_admin_password }}"
 
 # The following will fail unless this is running as an operator
+# Report current admin password in Nexus CR status
 - name: Save password in custom resource status
   k8s_status:
     api_version: gpte.opentlc.com/v1alpha1
