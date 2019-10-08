@@ -15,5 +15,11 @@ _gogs_memory_limit: 512Mi
 _gogs_cpu_request: 200m
 _gogs_cpu_limit: 500m
 _gogs_wait_for_init: true
-_gogs_image: docker.io/wkulhanek/gogs
+_gogs_image: quay.io/gpte-devops-automation/gogs
 _gogs_image_tag: latest
+
+# Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
+_gogs_route: ""
+
+# Internal variable. Do not change
+_gogs_actual_route: ""

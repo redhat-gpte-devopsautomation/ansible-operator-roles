@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "{{ _gogs_name }}"
+  namespace: "{{ _gogs_namespace }}"
+  labels:
+    app: "{{ _gogs_name }}"
+spec:
+  selector:
+    app: "{{ _gogs_name }}"
+  ports:
+  - name: gogs
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  sessionAffinity: None
+  type: ClusterIP

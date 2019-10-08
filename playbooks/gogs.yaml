@@ -23,7 +23,7 @@
       _postgresql_user: "gogsuser"
       _postgresql_password: "gogspassword"
       _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
-      _postgresql_image: "{{ postgresql_image|d('registry.redhat.io/rhscl/postgresql-96-rhel7') }}"
+      _postgresql_image: "{{ postgresql_image|d('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
       _postgresql_image_tag: "{{ postgresql_image_tag|d('latest') }}"
 
   - name: Set Gogs Service name to default value
@@ -38,8 +38,9 @@
       _gogs_namespace: "{{ meta.namespace }}"
       _gogs_name: "{{ gogs_service_name }}"
       _gogs_ssl: "{{ gogs_ssl|d(False)|bool }}"
+      _gogs_route: "{{ gogs_route | d('') }}"
+      _gogs_image_tag: "{{ gogs_image_tag | d('latest') }}"
       _gogs_volume_size: "{{ gogs_volume_size|d('4Gi') }}"
-      _gogs_image_tag: "{{ gogs_image_tag|d('latest') }}"
       _gogs_postgresql_service_name: "postgresql-gogs-{{ meta.name }}"
       _gogs_postgresql_database_name: gogsdb
       _gogs_postgresql_user: gogsuser

@@ -1,163 +1,60 @@
 ---
 # tasks file for Gogs
-- name: Set Fallback Facts for gogs_route
-  set_fact:
-    gogs_route: "dummy"
-
-- name: Set Gogs Service to {{ _gogs_state }}
+- name: Set OpenShift Objects for Gogs to {{ _gogs_state }}
   k8s:
     state: "{{ _gogs_state }}"
-    definition:
-      kind: Service
-      apiVersion: v1
-      metadata:
-        name: "{{ _gogs_name }}"
-        namespace: "{{ _gogs_namespace }}"
-        labels:
-          app: "{{ _gogs_name }}"
-      spec:
-        selector:
-          app: "{{ _gogs_name }}"
-        ports:
-        - name: gogs
-          port: 3000
-          protocol: TCP
-          targetPort: 3000
-        sessionAffinity: None
-        type: ClusterIP
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/service_account.j2
+  - ./templates/service.j2
+  - ./templates/route.j2
+  - ./templates/persistent_volume_claim.j2
 
-- name: Set Gogs Route to {{ _gogs_state }}
-  k8s:
-    state: "{{ _gogs_state }}"
-    definition: "{{ lookup('template', './templates/gogs_route.j2') | from_yaml }}"
-  register: gogs_route_result
+# Get gogs Route
+- name: Get Gogs Route Hostname
+  when:
+  - _gogs_state == "present"
+  k8s_facts:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: "{{ _gogs_name }}"
+    namespace: "{{ _gogs_namespace }}"
+  register: r_route
 
 - name: Store Gogs Route Hostname
+  when:
+  - _gogs_state == "present"
   set_fact:
-    gogs_route: "{{ gogs_route_result.result.spec.host }}"
-  when: gogs_route_result.method == "create" or gogs_route_result.method == "patch"
+    _gogs_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
 
-- name: Set Gogs PersistentVolumeClaim to {{ _gogs_state }}
+- name: Set Route dependant OpenShift Objects for Gogs to {{ _gogs_state }}
   k8s:
     state: "{{ _gogs_state }}"
-    definition:
-      kind: PersistentVolumeClaim
-      apiVersion: v1
-      metadata:
-        name: "{{ _gogs_name }}-pvc"
-        namespace: "{{ _gogs_namespace }}"
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ _gogs_volume_size }}"
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/config_map.j2
+  - ./templates/deployment.j2
 
-- name: Set Gogs ConfigMap to {{ _gogs_state }}
-  k8s:
-    state: "{{ _gogs_state }}"
-    definition: "{{ lookup('template', './templates/gogs_config_map.j2') | from_yaml }}"
-
-- name: Set Gogs Pod to {{ _gogs_state }}
-  k8s:
-    state: "{{ _gogs_state }}"
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: "{{ _gogs_name }}"
-        namespace: "{{ _gogs_namespace }}"
-        labels:
-          app: "{{ _gogs_name }}"
-      spec:
-        containers:
-        - image: "{{ _gogs_image }}:{{ _gogs_image_tag }}"
-          imagePullPolicy: IfNotPresent
-          name: gogs
-          ports:
-          - containerPort: 3000
-            protocol: TCP
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 3000
-              scheme: HTTP
-            initialDelaySeconds: 3
-            timeoutSeconds: 1
-            periodSeconds: 20
-            successThreshold: 1
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 3000
-              scheme: HTTP
-            initialDelaySeconds: 3
-            timeoutSeconds: 1
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-          resources:
-            request:
-              cpu: "{{ _gogs_cpu_request }}"
-              memory: "{{ _gogs_memory_request}}"
-            limits:
-              cpu: "{{ _gogs_cpu_limit}}"
-              memory: "{{ _gogs_memory_limit }}"
-          volumeMounts:
-          - name: gogs-data
-            mountPath: /data
-          - name: gogs-config
-            mountPath: /opt/gogs/custom/conf
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: gogs-data
-          persistentVolumeClaim:
-            claimName: "{{ _gogs_name }}-pvc"
-        - name: gogs-config
-          configMap:
-            name: "{{ _gogs_name }}-config"
-            items:
-              - key: app.ini
-                path: app.ini
-
-- name: Pause to wait for pod to be in the system
+- name: Wait until application is available
   when:
     - _gogs_state == "present"
     - _gogs_wait_for_init|bool
-  pause:
-    seconds: 5
-
-- name: Verify that the Gogs Pod is running
-  when:
-    - _gogs_state == "present"
-    - _gogs_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
+  k8s_facts:
+    api_version: apps/v1
+    kind: Deployment
     name: "{{ _gogs_name }}"
     namespace: "{{ _gogs_namespace }}"
-  register: gogs_pod
+  register: r_deployment
   until:
-  - gogs_pod.result.status.phase == "Running"
+  - r_deployment.resources[0].status.availableReplicas is defined
+  - r_deployment.resources[0].status.availableReplicas == 1
   retries: 50
   delay: 10
-  changed_when: false
-
-- name: Verify that the Gogs Pod is ready
-  when:
-    - _gogs_state == "present"
-    - _gogs_wait_for_init|bool
-  k8s:
-    api_version: v1
-    kind: Pod
-    name: "{{ _gogs_name }}"
-    namespace: "{{ _gogs_namespace }}"
-  register: gogs_pod
-  until:
-  - gogs_pod.result.status.containerStatuses[0].ready|d(False)|bool
-  retries: 25
-  delay: 5
-  changed_when: false
+  ignore_errors: yes
+  

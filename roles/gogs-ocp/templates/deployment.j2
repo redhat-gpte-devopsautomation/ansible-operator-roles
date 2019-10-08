@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ _gogs_name }}"
+  namespace: "{{ _gogs_namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ _gogs_name }}"
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: "{{ _gogs_name }}"
+    spec:
+      serviceAccountName: "{{ _gogs_name }}"
+      containers:
+      - name: gogs
+        image: "{{ _gogs_image }}:{{ _gogs_image_tag }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          periodSeconds: 20
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: "{{ _gogs_cpu_request }}"
+            memory: "{{ _gogs_memory_request}}"
+          limits:
+            cpu: "{{ _gogs_cpu_limit}}"
+            memory: "{{ _gogs_memory_limit }}"
+        volumeMounts:
+        - name: gogs-repositories
+          mountPath: /gogs-repositories
+        - name: gogs-config
+          mountPath: /home/gogs/conf
+      volumes:
+      - name: gogs-repositories
+        persistentVolumeClaim:
+          claimName: "{{ _gogs_name }}-pvc"
+      - name: gogs-config
+        configMap:
+          name: "{{ _gogs_name }}-config"
+          items:
+            - key: app.ini
+              path: app.ini
