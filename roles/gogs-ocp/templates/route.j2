@@ -9,6 +9,9 @@ spec:
   to:
     kind: Service
     name: "{{ _gogs_name }}"
+{% if _gogs_route|d("") != "" %}
+  host: "{{ _gogs_route }}"
+{% endif %}
 {% if _gogs_ssl|d(False)|bool %}
   tls:
     insecureEdgeTerminationPolicy: Redirect
