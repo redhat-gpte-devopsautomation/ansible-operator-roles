@@ -54,7 +54,7 @@ spec:
         - name: gogs-repositories
           mountPath: /gogs-repositories
         - name: gogs-config
-          mountPath: /home/gogs/conf
+          mountPath: /opt/gogs/custom/conf
       volumes:
       - name: gogs-repositories
         persistentVolumeClaim:
