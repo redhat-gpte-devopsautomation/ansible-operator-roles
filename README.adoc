@@ -1,6 +1,6 @@
 = Ansible Roles for Ansible Operators
 
-This repository contains roles that can be used to set up various applications on Red Hat OpenShift Container Platform. The primary purpose of these roles is to be used in Operators to be deployed on a cluster.
+This repository contains roles that can be used to set up various applications on Red Hat OpenShift Container Platform. The primary purpose of these roles is to be used in Operators to be deployed to a cluster.
 
 Available roles:
 
