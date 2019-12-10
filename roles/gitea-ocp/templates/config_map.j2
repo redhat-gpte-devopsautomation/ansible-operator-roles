@@ -10,9 +10,10 @@ data:
     RUN_USER = gitea
 
     [security]
-    INTERNAL_TOKEN = ${GITEA_INTERNAL_TOKEN}
-    INSTALL_LOCK   = true
-    SECRET_KEY     = ${GITEA_SECRET_KEY}
+    INTERNAL_TOKEN      = ${GITEA_INTERNAL_TOKEN}
+    INSTALL_LOCK        = true
+    SECRET_KEY          = ${GITEA_SECRET_KEY}
+    PASSWORD_COMPLEXITY = off
 
     [oauth2]
     ENABLE = false
