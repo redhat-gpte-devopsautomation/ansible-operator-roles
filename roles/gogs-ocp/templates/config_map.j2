@@ -18,7 +18,7 @@ data:
     SSL_MODE = disable
 
     [repository]
-    ROOT = /data/repositories
+    ROOT = /gogs-repositories
 
     [server]
     ROOT_URL="{{ 'http' if not _gogs_ssl|d(False)|bool else 'https' }}://{{ _gogs_actual_route }}"
