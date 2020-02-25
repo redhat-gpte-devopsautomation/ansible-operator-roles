@@ -9,4 +9,3 @@ Available roles:
 * Gitea: Github compatible repository
 * SonarQube: Code Analysis tool
 * Nexus: Artifact Manager, Proxy and Container Registry
-* Jenkins: CI/CD Server for OpenShift (not fully tested)
