@@ -39,6 +39,35 @@
   set_fact:
     _nexus_current_password: "{{ _nexus_admin_password }}"
 
+- name: Enable the script API
+  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} echo nexus.scripts.allowCreation=true >> /nexus-data/etc/nexus.properties"
+
+- name: Restart Nexus Pod
+  k8s:
+    state: absent
+    api_version: v1
+    kind: Pod
+    namespace: "{{ _nexus_namespace}}"
+    name: "{{ r_nexus_pod.resources[0].metadata.name }}"
+
+- name: Wait 10 seconds
+  pause:
+    seconds: 10
+
+- name: Wait for Nexus to be back up and running
+  k8s_facts:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ _nexus_namespace}}"
+    name: "{{ _nexus_name}}"
+  register: r_nexus_deployment
+  retries: 30
+  delay: 10
+  until:
+  - r_nexus_deployment.resources | length | int > 0
+  - r_nexus_deployment.resources[0].status.availableReplicas is defined
+  - r_nexus_deployment.resources[0].status.availableReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
+
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
   include_tasks: declare_script.yml
