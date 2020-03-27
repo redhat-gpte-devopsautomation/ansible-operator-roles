@@ -75,6 +75,10 @@
   - r_nexus_deployment.resources[0].status.availableReplicas is defined
   - r_nexus_deployment.resources[0].status.availableReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
 
+- name: Wait 10 seconds
+  pause:
+    seconds: 10
+
 # Upload all groovy scripts we will be using
 - name: Declare groovy scripts
   include_tasks: declare_script.yml
