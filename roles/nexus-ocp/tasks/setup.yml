@@ -39,8 +39,15 @@
   set_fact:
     _nexus_current_password: "{{ _nexus_admin_password }}"
 
+- name: Get nexus.properties file
+  shell: "oc cp -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/etc/nexus.properties /tmp/nexus.properties"
 - name: Enable the script API
-  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} echo 'nexus.scripts.allowCreation=true >> /nexus-data/etc/nexus.properties'"
+  lineinfile:
+    path: /tmp/nexus.properties
+    insertafter: EOF
+    line: nexus.scripts.allowCreation=true
+- name: Write nexus.properties file
+  shell: "oc cp -n {{ _nexus_namespace}} /tmp/nexus.properties {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/etc/nexus.properties"
 
 - name: Restart Nexus Pod
   k8s:
