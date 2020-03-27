@@ -135,11 +135,11 @@
 # The following will fail unless this is running as an operator
 # Report current admin password in Nexus CR status
 - name: Save password in custom resource status
-  k8s_status:
-    api_version: gpte.opentlc.com/v1alpha1
-    kind: Nexus
+  operator_sdk.util.k8s_status:
+    api_version: app.example.com/v1
+    kind: Foo
     name: "{{ meta.name }}"
     namespace: "{{ meta.namespace }}"
     status:
-      admin_password: "{{ _nexus_new_admin_password }}"
+      foo: bar 
   ignore_errors: true
