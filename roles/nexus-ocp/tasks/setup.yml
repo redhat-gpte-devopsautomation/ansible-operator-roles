@@ -39,11 +39,11 @@
   set_fact:
     _nexus_current_password: "{{ _nexus_admin_password }}"
 
-- name: Ensure nexus.properties file exists
-  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} touch /nexus-data/etc/nexus.properties"
+# - name: Ensure nexus.properties file exists
+#   shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} touch /nexus-data/etc/nexus.properties"
 
 - name: Enable the script API
-  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} echo nexus.scripts.allowCreation=true >> /nexus-data/etc/nexus.properties"
+  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} echo 'nexus.scripts.allowCreation=true' >> /nexus-data/etc/nexus.properties"
 
 - name: Restart Nexus Pod
   k8s:
