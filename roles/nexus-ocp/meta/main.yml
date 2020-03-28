@@ -1,5 +1,5 @@
 galaxy_info:
-  author: Wolfgang Kulhanek
+  author: Wolfgang Kulhanek, Jim Rigsbee
   description: Role to set up Nexus Artifact Repository on an OpenShift (Kubernetes) Cluster
   company: Red Hat
   license: Apache

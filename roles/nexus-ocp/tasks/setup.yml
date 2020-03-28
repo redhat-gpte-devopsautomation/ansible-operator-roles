@@ -3,7 +3,7 @@
 
 # Discover admin password for 3.17+
 - name: Get name of nexus pod
-  k8s_facts:
+  k8s_info:
     api_version: v1
     kind: Pod
     namespace: "{{ _nexus_namespace }}"
@@ -32,111 +32,271 @@
       state: absent
   - name: Set current admin password for 3.17+
     set_fact:
-      _nexus_current_password: "{{ r_admin_password['content']|b64decode }}"
+      _nexus_current_password: "{{ r_admin_password['content'] | b64decode }}"
 
 - name: Set Current password to admin password if password file does not exist
   when: not r_password_file.stat.exists
   set_fact:
     _nexus_current_password: "{{ _nexus_admin_password }}"
 
-- name: Get nexus.properties file
-  shell: "oc cp -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/etc/nexus.properties /tmp/nexus.properties"
-- name: Enable the script API
-  lineinfile:
-    path: /tmp/nexus.properties
-    insertafter: EOF
-    line: nexus.scripts.allowCreation=true
-- name: Write nexus.properties file
-  shell: "oc cp -n {{ _nexus_namespace}} /tmp/nexus.properties {{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/etc/nexus.properties"
+- name: Declare groovy scripts in Nexus
+  uri:
+    url: "{{ nexus_url }}/service/rest/v1/script"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 204
+    validate_certs: no
+    body:
+      name: "{{ item }}"
+      type: 'groovy'
+      content: "{{ lookup('file', 'groovy/' + item + '.groovy') }}"
+  ignore_errors: true
+  loop:
+  - create_repo_maven_group
+  - set_anon_access
 
-- name: Restart Nexus Pod
-  k8s:
-    state: absent
-    api_version: v1
-    kind: Pod
-    namespace: "{{ _nexus_namespace}}"
-    name: "{{ r_nexus_pod.resources[0].metadata.name }}"
-
-- name: Wait 10 seconds
-  pause:
-    seconds: 10
-
-- name: Wait for Nexus to be back up and running
-  k8s_facts:
-    api_version: v1
-    kind: Deployment
-    namespace: "{{ _nexus_namespace}}"
-    name: "{{ _nexus_name}}"
-  register: r_nexus_deployment
-  retries: 30
-  delay: 10
-  until:
-  - r_nexus_deployment.resources | length | int > 0
-  - r_nexus_deployment.resources[0].status.availableReplicas is defined
-  - r_nexus_deployment.resources[0].status.availableReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
-
-- name: Wait 10 seconds
-  pause:
-    seconds: 10
-
-# Upload all groovy scripts we will be using
-- name: Declare groovy scripts
-  include_tasks: declare_script.yml
-  with_items:
-    - update_admin_password
-    - delete_repo
-    - create_repo_maven_proxy
-    - create_repo_maven_group
-    - create_repo_maven_hosted
-    - create_repo_docker_hosted
-    - create_repo_npm_hosted
-    - create_repo_npm_proxy
-    - create_repo_npm_group
-    - set_anon_access
-
-# Delete default repos
-- name: Delete default repos
-  include_tasks: delete_repo.yml
+- name: Delete all repositories
   when: _nexus_delete_default_repos | bool
-  with_items:
-    - maven-central
-    - maven-public
-    - maven-releases
-    - maven-snapshots
-    - nuget-group
-    - nuget-hosted
-    - nuget.org-proxy
+  block:
+  - name: Get current repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/v1/repositories"
+      user: admin
+      password: "{{ _nexus_current_password }}"
+      method: GET
+      status_code: 200
+      force_basic_auth: yes
+      validate_certs: no
+    register: r_repos
 
-- name: Create Maven Proxies
-  include_tasks: create_repo_maven_proxy.yml
-  with_items: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
+  - name: Delete all existing repositories
+    when: r_repos.json | length > 0
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/{{ item.name }}"
+      user: admin
+      password: "{{ _nexus_current_password }}"
+      method: DELETE
+      status_code: 204
+      force_basic_auth: yes
+      validate_certs: no
+    loop: "{{ r_repos.json }}"
 
-- name: Create Maven Hosted Repos
-  include_tasks: create_repo_maven_hosted.yml
-  with_items: "{{ nexus_repos_maven_hosted | d(_nexus_repos_maven_hosted) }}"
+- name: Create Maven Proxy repositories
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/repositories/maven/proxy"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 201
+    validate_certs: no
+    body:
+      name: "{{ item.name }}"
+      online: true
+      storage:
+        blobStoreName: "{{ item.blob_store }}"
+        strictContentTypeValidation: "{{ item.strict_content_validation }}"
+      # cleanup:
+      #   policyNames: weekly-cleanup
+      proxy:
+        remoteUrl: "{{ item.remote_url }}"
+        contentMaxAge: 1440
+        metadataMaxAge: 1440
+      negativeCache:
+        enabled: false
+        timeToLive: 1440
+      httpClient:
+        blocked: false
+        autoBlock: false
+        connection:
+          retries: 0
+          userAgentSuffix: string
+          timeout: 60
+          enableCircularRedirects: false
+          enableCookies: false
+      routingRule: string
+      maven:
+        versionPolicy: "{{ item.version_policy | upper }}"
+        layoutPolicy: "{{ item.layout_policy | upper }}"
+  ignore_errors: true
+  loop: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
 
-- name: Create Maven Groups
-  include_tasks: create_repo_maven_group.yml
-  with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
+# - name: Create Maven Groups
+#   include_tasks: create_repo_maven_group.yml
+#   with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
 
-- name: Create Docker Repos
-  include_tasks: create_repo_docker_hosted.yml
-  with_items: "{{ nexus_repos_docker_hosted | d(_nexus_repos_docker_hosted) }}"
+# - name: Create Maven Groups
+#   uri:
+#     url: "{{ nexus_url }}/service/rest/v1/script/create_repo_maven_group/run"
+#     user: admin
+#     password: "{{ _nexus_current_password }}"
+#     headers:
+#       Content-Type: "text/plain"
+#     method: POST
+#     status_code: 200
+#     force_basic_auth: yes
+#     validate_certs: no
+#     body: "{{ item | to_json }}"
+#   loop: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
 
-- name: Create NPM Proxies
-  include_tasks: create_repo_npm_proxy.yml
-  with_items: "{{ nexus_repos_npm_proxy | d(_nexus_repos_npm_proxy) }}"
+# This REST API doesn't exist yet as of Nexus 3.21
+# - name: Create Maven Groups
+#   uri:
+#     url: "{{ nexus_url }}/service/rest/beta/repositories/maven/group"
+#     user: admin
+#     password: "{{ _nexus_current_password }}"
+#     body_format: json
+#     method: POST
+#     force_basic_auth: yes
+#     status_code: 201
+#     validate_certs: no
+#     body:
+#       name: "{{ item.name }}"
+#       online: true
+#       storage:
+#         blobStoreName: "{{ item.blob_store }}"
+#         strictContentTypeValidation: "{{ item.strict_content_validation }}"
+#       group:
+#         memberNames: "{{ item.member_repos }}"
+#   ignore_errors: true
+#   loop: "{{ nexus_repos_maven_group | d(_nexus_repos_maven_group) }}"
+
+- name: Create Maven hosted repositories
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/repositories/maven/hosted"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 201
+    validate_certs: no
+    body:
+      name: "{{ item.name }}"
+      online: true
+      storage:
+        blobStoreName: "{{ item.blob_store }}"
+        strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        writePolicy: "{{ item.write_policy | upper }}"
+      # cleanup:
+      #   policyNames: weekly-cleanup
+      maven:
+        versionPolicy: "{{ item.version_policy | upper }}"
+        layoutPolicy: "{{ item.layout_policy | upper }}"
+  ignore_errors: true
+  loop: "{{ nexus_repos_maven_hosted | d(_nexus_repos_maven_hosted) }}"
+
+- name: Create Docker repositories
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/repositories/docker/hosted"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 201
+    validate_certs: no
+    body:
+      name: "{{ item.name }}"
+      online: true
+      storage:
+        blobStoreName: "{{ item.blob_store }}"
+        strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        writePolicy: "{{ item.write_policy | upper}}"
+      # cleanup:
+      #   policyNames: weekly-cleanup
+      docker:
+        v1Enabled: "{{ item.v1_enabled }}"
+        forceBasicAuth: true
+        httpPort: "{{ item.http_port }}"
+        httpsPort: "{{ item.https_port }}"
+  ignore_errors: true
+  loop: "{{ nexus_repos_docker_hosted | d(_nexus_repos_docker_hosted) }}"
+
+- name: Create NPM Proxy repositories
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/repositories/npm/proxy"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 201
+    validate_certs: no
+    body:
+      name: "{{ item.name }}"
+      online: true
+      storage:
+        blobStoreName: "{{ item.blob_store }}"
+        strictContentTypeValidation: "{{ item.strict_content_validation }}"
+      # cleanup:
+      #   policyNames: weekly-cleanup
+      proxy:
+        remoteUrl: "{{ item.remote_url }}"
+        contentMaxAge: 1440
+        metadataMaxAge: 1440
+      negativeCache:
+        enabled: false
+        timeToLive: 1440
+      httpClient:
+        blocked: false
+        autoBlock: false
+        connection:
+          retries: 0
+          userAgentSuffix: string
+          timeout: 60
+          enableCircularRedirects: false
+          enableCookies: false
+        authentication:
+          type: username
+          username: string
+          ntlmHost: string
+          ntlmDomain: string
+      routingRule: string
+  ignore_errors: true
+  loop: "{{ nexus_repos_npm_proxy | d(_nexus_repos_npm_proxy) }}"
 
 - name: Create NPM Groups
-  include_tasks: create_repo_npm_group.yml
-  with_items: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/repositories/npm/group"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    body_format: json
+    method: POST
+    force_basic_auth: yes
+    status_code: 201
+    validate_certs: no
+    body:
+      name: "{{ item.name }}"
+      online: true
+      storage:
+        blobStoreName: "{{ item.blob_store }}"
+        strictContentTypeValidation: "{{ item.strict_content_validation }}"
+      group:
+        memberNames: "{{ item.member_repos }}"
+  ignore_errors: true
+  loop: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
 
 - name: Turn on Anonymous Access
   include_tasks: set_anon_access.yml
 
 - name: Update Admin Password
   when: _nexus_new_admin_password | length > 0
-  include_tasks: update_admin_password.yml
+  uri:
+    url: "{{ nexus_url }}/service/rest/beta/security/users/admin/change-password"
+    user: admin
+    password: "{{ _nexus_current_password }}"
+    headers:
+      Content-Type: "text/plain"
+    method: PUT
+    status_code: 200,204
+    force_basic_auth: yes
+    validate_certs: no
+    body: "{{ _nexus_new_admin_password }}"
 
 - name: Change default password
   when: _nexus_new_admin_password | length > 0
@@ -147,10 +307,10 @@
 # Report current admin password in Nexus CR status
 - name: Save password in custom resource status
   operator_sdk.util.k8s_status:
-    api_version: app.example.com/v1
-    kind: Foo
+    api_version: gpte.opentlc.com/v1alpha1
+    kind: Nexus
     name: "{{ meta.name }}"
     namespace: "{{ meta.namespace }}"
     status:
-      foo: bar 
+      admin_password: "{{ _nexus_new_admin_password }}"
   ignore_errors: true

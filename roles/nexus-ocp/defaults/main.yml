@@ -5,12 +5,11 @@ _nexus_namespace: nexus
 _nexus_name: nexus3
 
 _nexus_ssl: False
-_nexus_volume_size: 10Gi
-_nexus_memory_request: 1Gi
+_nexus_volume_size: 20Gi
+_nexus_memory_request: 2Gi
 _nexus_memory_limit: 2Gi
-_nexus_cpu_request: 500m
+_nexus_cpu_request: 2
 _nexus_cpu_limit: 2
-_nexus_wait_for_init: True
 #_nexus_image: docker.io/sonatype/nexus3
 _nexus_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
 _nexus_image_tag: latest
@@ -33,57 +32,66 @@ _nexus_new_admin_password: admin123
 # Delete all default Nexus repositories during initial setup
 _nexus_delete_default_repos: true
 
-_nexus_repos_maven_defaults:
+_nexus_repos_maven_proxy:
+- name: maven-central
+  remote_url: https://repo1.maven.org/maven2/
   blob_store: default
   strict_content_validation: true
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
-  write_policy: allow_once # allow_once or allow
-
-_nexus_repos_maven_proxy:
-  - name: maven-central
-    remote_url: https://repo1.maven.org/maven2/
-    layout_policy: permissive
-  - name: redhat-ga
-    remote_url: https://maven.repository.redhat.com/ga/
-    layout_policy: permissive
+- name: redhat-ga
+  remote_url: https://maven.repository.redhat.com/ga/
+  blob_store: default
+  strict_content_validation: true
+  version_policy: release # release, snapshot or mixed
+  layout_policy: strict # strict or permissive
   # - name: jboss
   #   remote_url: https://repository.jboss.org/nexus/content/groups/public
+  #   blob_store: default
+  #   strict_content_validation: true
+  #   version_policy: release # release, snapshot or mixed
+  #   layout_policy: strict # strict or permissive
 
 _nexus_repos_maven_hosted:
-  - name: releases
-    version_policy: release
-    write_policy: allow_once
-
-_nexus_repos_maven_group:
-  - name: maven-all-public
-    member_repos:
-      - maven-central
-      - redhat-ga
-#      - jboss
-
-_nexus_repos_docker_defaults:
+- name: releases
   blob_store: default
+  write_policy: allow_once
   strict_content_validation: true
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
-  write_policy: allow_once # allow_once or allow
+
+_nexus_repos_maven_group:
+- name: maven-all-public
+  blob_store: default
+  strict_content_validation: true
+  member_repos:
+  - maven-central
+  - redhat-ga
+# - jboss
 
 _nexus_repos_docker_hosted:
-  - name: docker
-    http_port: 5000
-    v1_enabled: True
-
-_nexus_repos_npm_defaults:
+- name: docker
+  http_port: 5000
+  https_port: 5001
+  v1_enabled: True
   blob_store: default
   strict_content_validation: true
   write_policy: allow_once # allow_once or allow
 
 _nexus_repos_npm_proxy:
-  - name: npm
-    remote_url: https://registry.npmjs.org
+- name: npm
+  remote_url: https://registry.npmjs.org
+  blob_store: default
+  strict_content_validation: true
 
-_nexus_repos_npm_group: []
+_nexus_repos_npm_group:
+- name: npm-all
+  blob_store: default
+  strict_content_validation: true
+  member_repos:
+  - npm
+
+#_nexus_repos_npm_group: []
   # - name: npm-all
   #   member_repos:
   #     - npm-internal

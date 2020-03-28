@@ -11,8 +11,9 @@
 ansible-playbook ./playbooks/nexus.yaml \
   -e "nexus_volume_size=5Gi" \
   -e "nexus_ssl=True" \
+  -e "nexus_image=docker.io/sonatype/nexus3" \
   -e "nexus_image_tag=latest" \
-  -e "nexus_route=nexus.apps.shared-dev.dev.openshift.opentlc.com" \
-  -e "nexus_registry_route=nexus-registry.apps.shared-dev.dev.openshift.opentlc.com" \
   -e "nexus_new_admin_password=redhat" \
   -e '{"meta": {"namespace":"xyz-nexus","name":"nexus"}}'
+  #-e "nexus_route=nexus.apps.shared-dev.dev.openshift.opentlc.com" \
+  #-e "nexus_registry_route=nexus-registry.apps.shared-dev.dev.openshift.opentlc.com" \
