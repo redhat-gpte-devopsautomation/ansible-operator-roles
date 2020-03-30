@@ -16,6 +16,13 @@ spec:
         app: "{{ _nexus_name }}"
     spec:
       serviceAccountName: "{{ _nexus_name }}"
+      initContainers:
+      - name: enable-script-access
+        image: busybox
+        command: ['sh', '-c', 'if [ ! -d ./nexus-data/etc ]; then mkdir -p ./nexus-data/etc; echo nexus.scripts.allowCreation=true >./nexus-data/etc/nexus.properties; fi']
+        volumeMounts:
+        - name: nexus-data
+          mountPath: /nexus-data
       containers:
       - name: nexus
         image: "{{ _nexus_image }}:{{ _nexus_image_tag }}"
@@ -30,7 +37,7 @@ spec:
             path: /
             port: 8081
             scheme: HTTP
-          initialDelaySeconds: 60
+          initialDelaySeconds: 80
           timeoutSeconds: 1
           periodSeconds: 20
           successThreshold: 1
@@ -40,7 +47,7 @@ spec:
             path: /
             port: 8081
             scheme: HTTP
-          initialDelaySeconds: 120
+          initialDelaySeconds: 80
           timeoutSeconds: 1
           periodSeconds: 10
           successThreshold: 1

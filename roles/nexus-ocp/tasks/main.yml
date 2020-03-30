@@ -22,28 +22,26 @@
     definition: "{{ lookup('template', './templates/deployment.j2' ) | from_yaml }}"
   register: r_nexus_changed
 
-- name: Wait until application is available
-  when:
-    - _nexus_state == "present"
-    - _nexus_wait_for_init|bool
-  k8s_facts:
+- name: Wait until Nexus pod is ready
+  when: _nexus_state == "present"
+  k8s_info:
     api_version: apps/v1
     kind: Deployment
-    name: "{{ _nexus_name }}"
     namespace: "{{ _nexus_namespace }}"
-  register: r_deployment
+    name: "{{ _nexus_name }}"
+  register: r_nexus_deployment
   until:
-  - r_deployment.resources[0].status.availableReplicas is defined
-  - r_deployment.resources[0].status.availableReplicas == 1
-  retries: 50
-  delay: 10
+  - r_nexus_deployment.resources | length | int > 0
+  - r_nexus_deployment.resources[0].status.availableReplicas is defined
+  - r_nexus_deployment.resources[0].status.availableReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
+  retries: 40
+  delay: 5
   ignore_errors: yes
 
 # Get Nexus Route
 - name: Get Nexus Route Hostname
-  when:
-  - _nexus_state == "present"
-  k8s_facts:
+  when: _nexus_state == "present"
+  k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
     name: "{{ _nexus_name }}"
@@ -51,8 +49,7 @@
   register: r_route
 
 - name: Store Nexus Route Hostname
-  when:
-  - _nexus_state == "present"
+  when: _nexus_state == "present"
   set_fact:
     _nexus_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
 

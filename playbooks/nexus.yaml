@@ -23,8 +23,9 @@
     vars:
       _nexus_namespace: "{{ meta.namespace }}"
       _nexus_name: "{{ meta.name }}"
-      _nexus_volume_size: "{{ nexus_volume_size|d('4Gi') }}"
+      _nexus_volume_size: "{{ nexus_volume_size|d('10Gi') }}"
       _nexus_ssl: "{{ nexus_ssl|d('False') }}"
+      _nexus_image: "{{ nexus_image | d('registry.connect.redhat.com/sonatype/nexus-repository-manager') }}"
       _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
       _nexus_route: "{{ nexus_route | d('') }}"
       _nexus_registry_route: "{{ nexus_registry_route | d('') }}"
