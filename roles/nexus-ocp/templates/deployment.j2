@@ -19,7 +19,7 @@ spec:
       initContainers:
       - name: enable-script-access
         image: busybox
-        command: ['sh', '-c', '[ -d /nexus-data/etc ] || mkdir -p /nexus-data/etc && echo nexus.scripts.allowCreation=true >/nexus-data/etc/nexus.properties']
+        command: ['sh', '-c', 'if [ ! -d ./nexus-data/etc ]; then mkdir -p ./nexus-data/etc; echo nexus.scripts.allowCreation=true >./nexus-data/etc/nexus.properties; fi']
         volumeMounts:
         - name: nexus-data
           mountPath: /nexus-data
