@@ -10,32 +10,18 @@
     label_selectors: "app={{ _nexus_name }}"
   register: r_nexus_pod
 
-- name: Attempt to fetch password file
-  shell: "oc cp {{ _nexus_namespace}}/{{ r_nexus_pod.resources[0].metadata.name }}:/nexus-data/admin.password /tmp/admin.password"
+- name: Attempt to read nexus admin password file
+  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} cat /nexus-data/admin.password"
   ignore_errors: true
+  register: r_admin_password
 
-- name: Check for temporary file
-  stat:
-    path: /tmp/admin.password
-  register: r_password_file
+- name: Set current password
+  when: r_admin_password.rc == 0
+  set_fact:
+    _nexus_current_password: "{{ r_admin_password.stdout }}"
 
-- name: Get admin password for 3.17+
-  when: r_password_file.stat.exists
-  block:
-  - name: Read admin password for 3.17+
-    slurp:
-      src: /tmp/admin.password
-    register: r_admin_password
-  - name: Remove temporary file for 3.17+
-    file:
-      path: /tmp/admin.password
-      state: absent
-  - name: Set current admin password for 3.17+
-    set_fact:
-      _nexus_current_password: "{{ r_admin_password['content'] | b64decode }}"
-
-- name: Set Current password to admin password if password file does not exist
-  when: not r_password_file.stat.exists
+- name: Set current password to admin password if password file does not exist
+  when: not r_admin_password.rc == 0
   set_fact:
     _nexus_current_password: "{{ _nexus_admin_password }}"
 
@@ -125,23 +111,9 @@
   ignore_errors: true
   loop: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
 
-# - name: Create Maven Groups
-#   include_tasks: create_repo_maven_group.yml
-#   with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
-
-# - name: Create Maven Groups
-#   uri:
-#     url: "{{ nexus_url }}/service/rest/v1/script/create_repo_maven_group/run"
-#     user: admin
-#     password: "{{ _nexus_current_password }}"
-#     headers:
-#       Content-Type: "text/plain"
-#     method: POST
-#     status_code: 200
-#     force_basic_auth: yes
-#     validate_certs: no
-#     body: "{{ item | to_json }}"
-#   loop: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
+- name: Create Maven Groups
+  include_tasks: create_repo_maven_group.yml
+  with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
 
 # This REST API doesn't exist yet as of Nexus 3.21
 # - name: Create Maven Groups

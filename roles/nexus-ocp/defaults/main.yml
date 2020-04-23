@@ -45,12 +45,12 @@ _nexus_repos_maven_proxy:
   strict_content_validation: true
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
-  # - name: jboss
-  #   remote_url: https://repository.jboss.org/nexus/content/groups/public
-  #   blob_store: default
-  #   strict_content_validation: true
-  #   version_policy: release # release, snapshot or mixed
-  #   layout_policy: strict # strict or permissive
+- name: jboss
+  remote_url: https://repository.jboss.org/nexus/content/groups/public
+  blob_store: default
+  strict_content_validation: true
+  version_policy: release # release, snapshot or mixed
+  layout_policy: strict # strict or permissive
 
 _nexus_repos_maven_hosted:
 - name: releases
@@ -67,7 +67,7 @@ _nexus_repos_maven_group:
   member_repos:
   - maven-central
   - redhat-ga
-# - jboss
+  - jboss
 
 _nexus_repos_docker_hosted:
 - name: docker
@@ -90,12 +90,6 @@ _nexus_repos_npm_group:
   strict_content_validation: true
   member_repos:
   - npm
-
-#_nexus_repos_npm_group: []
-  # - name: npm-all
-  #   member_repos:
-  #     - npm-internal
-  #     - npm-proxy
 
 # --- Internal Variables ---
 # --- Do not change --------
