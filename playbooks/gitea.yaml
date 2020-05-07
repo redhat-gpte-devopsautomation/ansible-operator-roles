@@ -22,20 +22,21 @@
       _postgresql_database_name: "giteadb"
       _postgresql_user: "giteauser"
       _postgresql_password: "giteapassword"
-      _postgresql_volume_size: "{{ postgresql_volume_size|d('4Gi') }}"
-      _postgresql_image: "{{ postgresql_image | d('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
-      _postgresql_image_tag: "{{ postgresql_image_tag|d('latest') }}"
+      _postgresql_volume_size: "{{ postgresql_volume_size|default('4Gi') }}"
+      _postgresql_image: "{{ postgresql_image | default('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
+      _postgresql_image_tag: "{{ postgresql_image_tag|default('latest') }}"
 
   - name: Set up Gitea
     include_role:
       name: ./roles/gitea-ocp
     vars:
       _gitea_namespace: "{{ meta.namespace }}"
-      _gitea_name: "{{ gitea_service_name | d( meta.name ) }}"
-      _gitea_ssl: "{{ gitea_ssl | d(False) | bool }}"
-      _gitea_route: "{{ gitea_route | d('') }}"
-      _gitea_image_tag: "{{ gitea_image_tag | d('latest') }}"
-      _gitea_volume_size: "{{ gitea_volume_size | d('4Gi') }}"
+      _gitea_name: "{{ gitea_service_name | default( meta.name ) }}"
+      _gitea_ssl: "{{ gitea_ssl | default(False) | bool }}"
+      _gitea_route: "{{ gitea_route | default('') }}"
+      _gitea_image: "{{ gitea_image | default('quay.io/gpte-devops-automation/gitea')"
+      _gitea_image_tag: "{{ gitea_image_tag | default('latest') }}"
+      _gitea_volume_size: "{{ gitea_volume_size | default('4Gi') }}"
       _gitea_postgresql_service_name: "postgresql-{{ meta.name }}"
       _gitea_postgresql_database_name: giteadb
       _gitea_postgresql_user: giteauser
