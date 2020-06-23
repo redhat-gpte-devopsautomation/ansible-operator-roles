@@ -21,17 +21,55 @@
     include_role:
       name: ./roles/nexus-ocp
     vars:
-      _nexus_namespace: "{{ meta.namespace }}"
-      _nexus_name: "{{ meta.name }}"
-      _nexus_volume_size: "{{ nexus_volume_size|d('10Gi') }}"
-      _nexus_ssl: "{{ nexus_ssl|d('False') }}"
-      _nexus_image: "{{ nexus_image | d('registry.connect.redhat.com/sonatype/nexus-repository-manager') }}"
-      _nexus_image_tag: "{{ nexus_image_tag|d('latest') }}"
-      _nexus_route: "{{ nexus_route | d('') }}"
-      _nexus_registry_route: "{{ nexus_registry_route | d('') }}"
-      _nexus_cpu_request: "{{ nexus_cpu_request|d('500m') }}"
-      _nexus_cpu_limit: "{{ nexus_cpu_limit|d('2') }}"
-      _nexus_memory_request: "{{ nexus_memory_request|d('1Gi') }}"
-      _nexus_memory_limit: "{{ nexus_memory_limit|d('2Gi') }}"
-      _nexus_admin_password: "{{ nexus_admin_password|d('admin123') }}"
-      _nexus_new_admin_password: "{{ nexus_new_admin_password|d('admin123') }}"
+      # Project to install Nexus into
+      nexus_ocp_namespace: "{{ meta.namespace }}"
+      # Name of the Nexus instance
+      nexus_ocp_name: "{{ meta.name }}"
+
+      # Persistent Volume Claim Size for Nexus
+      nexus_ocp_volume_size: "{{ nexus_volume_size | default( '10Gi' ) }}"
+
+      # Container image for the Nexus Repository Manager
+      nexus_ocp_image: "{{ nexus_image | default( 'registry.connect.redhat.com/sonatype/nexus-repository-manager' ) }}"
+      # Image tag for the Nexus Repository Manager
+      nexus_ocp_image_tag: "{{ nexus_image_tag | default( 'latest' ) }}"
+
+      # Use SSL Termination for the Nexus route
+      nexus_ocp_ssl: "{{ nexus_ssl | default( 'False' ) }}"
+      # Specify a route for the Nexus instance. When empty create default route
+      nexus_ocp_route: "{{ nexus_route | default( '' ) }}"
+      # Specify a route for the Nexus container regisgtry instance. When empty create default route
+      nexus_ocp_registry_route: "{{ nexus_registry_route | default( '' ) }}"
+
+      # Resource requests and limits
+      nexus_ocp_cpu_request:    "{{ nexus_cpu_request    | default( '2' )   }}"
+      nexus_ocp_cpu_limit:      "{{ nexus_cpu_limit      | default( '2' )   }}"
+      nexus_ocp_memory_request: "{{ nexus_memory_request | default( '2Gi' ) }}"
+      nexus_ocp_memory_limit:   "{{ nexus_memory_limit   | default( '2Gi' ) }}"
+
+      # Current admin password (for old Nexus versions)
+      nexus_ocp_admin_password: "{{ nexus_admin_password | default( 'admin123' ) }}"
+      # Set a new admin password
+      nexus_ocp_new_admin_password: "{{ nexus_new_admin_password | default( 'admin123' ) }}"
+
+      # Enable anonymous read access
+      nexus_ocp_enable_anonymous: "{{ nexus_enable_anonymous | default( 'True' ) }}"
+
+      # Delete default repositories before creating any repositories specified below
+      nexus_ocp_repos_delete_default: "{{ nexus_repos_delete_default | default ( 'True' ) }}"
+
+      # Nexus repositories to create
+      # See ansible-operator-roles/nexus-ocp/defaults/main.yml for examples
+      nexus_ocp_repos_maven_proxy_setup:   "{{ nexus_repos_maven_proxy_setup   | default( 'True' ) }}"
+      nexus_ocp_repos_maven_hosted_setup:  "{{ nexus_repos_maven_hosted_setup  | default( 'True' ) }}"
+      nexus_ocp_repos_maven_group_setup:   "{{ nexus_repos_maven_group_setup   | default( 'True' ) }}"
+      nexus_ocp_repos_docker_hosted_setup: "{{ nexus_repos_docker_hosted_setup | default( 'True' ) }}"
+      nexus_ocp_repos_npm_proxy_setup:     "{{ nexus_repos_npm_proxy_setup     | default( 'True' ) }}"
+      nexus_ocp_repos_npm_group_setup:     "{{ nexus_repos_npm_group_setup     | default( 'True' ) }}"
+
+      nexus_ocp_repos_maven_proxy:   "{{ nexus_repos_maven_proxy   | default( '' ) }}"
+      nexus_ocp_repos_maven_hosted:  "{{ nexus_repos_maven_hosted  | default( '' ) }}"
+      nexus_ocp_repos_maven_group:   "{{ nexus_repos_maven_group   | default( '' ) }}"
+      nexus_ocp_repos_docker_hosted: "{{ nexus_repos_docker_hosted | default( '' ) }}"
+      nexus_ocp_repos_npm_proxy:     "{{ nexus_repos_npm_proxy     | default( '' ) }}"
+      nexus_ocp_repos_npm_group:     "{{ nexus_repos_npm_group     | default( '' ) }}"

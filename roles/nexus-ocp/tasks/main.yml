@@ -1,12 +1,25 @@
 ---
-# tasks file for Nexus
+# Set up Nexus
 
-- name: Set OpenShift Objects for Nexus to {{ _nexus_state }}
+- name: Check for valid Nexus image tag
+  when: nexus_ocp_state == 'present'
+  assert:
+    that:
+    - nexus_ocp_image_tag is not match('latest')
+    fail_msg: "Due to the frequent changes in the Nexus container image, 'latest' is not a valid image tag. Please use a specific version starting with 3.24.0."
+    quiet: true
+
+- name: Check for supported Nexus image version
+  when: nexus_ocp_state == 'present'
+  assert:
+    that:
+    - nexus_ocp_image_tag is version_compare('3.24', '>=')
+    fail_msg: "Minimum supported Nexus Version is 3.24.0."
+    quiet: true
+
+- name: Set OpenShift Objects for Nexus to {{ nexus_ocp_state }}
   k8s:
-    state: "{{ _nexus_state }}"
-    merge_type:
-    - strategic-merge
-    - merge
+    state: "{{ nexus_ocp_state }}"
     definition: "{{ lookup('template', item ) | from_yaml }}"
   loop:
   - ./templates/service_account.j2
@@ -16,45 +29,45 @@
   - ./templates/registry_route.j2
   - ./templates/persistent_volume_claim.j2
 
-- name: Set Nexus Deployment to {{ _nexus_state }}
+- name: Set Nexus Deployment to {{ nexus_ocp_state }}
   k8s:
-    state: "{{ _nexus_state }}"
+    state: "{{ nexus_ocp_state }}"
     definition: "{{ lookup('template', './templates/deployment.j2' ) | from_yaml }}"
   register: r_nexus_changed
 
 - name: Wait until Nexus pod is ready
-  when: _nexus_state == "present"
+  when: nexus_ocp_state == "present"
   k8s_info:
     api_version: apps/v1
     kind: Deployment
-    namespace: "{{ _nexus_namespace }}"
-    name: "{{ _nexus_name }}"
+    namespace: "{{ nexus_ocp_namespace }}"
+    name: "{{ nexus_ocp_name }}"
   register: r_nexus_deployment
   until:
   - r_nexus_deployment.resources | length | int > 0
-  - r_nexus_deployment.resources[0].status.availableReplicas is defined
-  - r_nexus_deployment.resources[0].status.availableReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
+  - r_nexus_deployment.resources[0].status.readyReplicas is defined
+  - r_nexus_deployment.resources[0].status.readyReplicas | int == r_nexus_deployment.resources[0].spec.replicas | int
   retries: 40
   delay: 5
   ignore_errors: yes
 
 # Get Nexus Route
 - name: Get Nexus Route Hostname
-  when: _nexus_state == "present"
+  when: nexus_ocp_state == "present"
   k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
-    name: "{{ _nexus_name }}"
-    namespace: "{{ _nexus_namespace }}"
+    name: "{{ nexus_ocp_name }}"
+    namespace: "{{ nexus_ocp_namespace }}"
   register: r_route
 
 - name: Store Nexus Route Hostname
-  when: _nexus_state == "present"
+  when: nexus_ocp_state == "present"
   set_fact:
-    _nexus_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
+    nexus_ocp_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
 
 - name: Perform Initial Nexus Configuration
   include_tasks: setup.yml
   when: r_nexus_changed.method == "create"
   vars:
-    nexus_url: "{{ 'http' if not _nexus_ssl|d(False)|bool else 'https' }}://{{ _nexus_actual_route }}"
+    nexus_url: "{{ 'http' if not nexus_ocp_ssl | default( False ) | bool else 'https' }}://{{ nexus_ocp_actual_route }}"

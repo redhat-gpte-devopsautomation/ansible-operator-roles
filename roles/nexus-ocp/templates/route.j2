@@ -3,18 +3,18 @@ apiVersion: route.openshift.io/v1
 metadata:
   annotations:
     console.alpha.openshift.io/overview-app-route: "true"
-  name: "{{ _nexus_name }}"
-  namespace: "{{ _nexus_namespace }}"
+  name: "{{ nexus_ocp_name }}"
+  namespace: "{{ nexus_ocp_namespace }}"
   labels:
-    app: "{{ _nexus_name }}"
+    app: "{{ nexus_ocp_name }}"
 spec:
-{% if _nexus_route|d("") != "" %}
-  host: "{{ _nexus_route }}"
+{% if nexus_ocp_route|d("") != "" %}
+  host: "{{ nexus_ocp_route }}"
 {% endif %}
   to:
     kind: Service
-    name: "{{ _nexus_name }}"
-{% if _nexus_ssl|d(False)|bool %}
+    name: "{{ nexus_ocp_name }}"
+{% if nexus_ocp_ssl|d(False)|bool %}
   tls:
     insecureEdgeTerminationPolicy: Redirect
     termination: edge
