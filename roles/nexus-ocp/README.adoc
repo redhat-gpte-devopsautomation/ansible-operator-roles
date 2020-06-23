@@ -9,18 +9,18 @@ This role is designed to set up a Nexus artifact manager on an OpenShift cluster
 [cols="2,1,1,4",options="header"]
 |====
 |Variable Name|Default|Required|Description
-|_nexus_namespace|nexus|Yes|Project Name to install Nexus into
-|_nexus_name|nexus3|No|Name of the Nexus service
-|_nexus_ssl|False|No|Set up SSL on the Nexus Route
-|_nexus_volume_size|1Gi|No|Size of Persistent Volume to be created
-|_nexus_memory_request|512Mi|No|Minimum Memory Requirement
-|_nexus_memory_limit|512Mi|No|Maximum Memory Requirement
-|_nexus_cpu_request|200m|No|Minimum CPU Requirement
-|_nexus_cpu_limit|500m|No|Maximum CPU Requirement
-|_nexus_wait_for_init|true|No|Wait for the Nexs pod to be running and ready
-|_nexus_image|docker.io/sonatype/nexus3|Yes|Nexus image for Gitea
-|_nexus_image_tag|latest|Yes|Tag for Nexus container image
-|_nexus_state|present|No|`present` to install, `absent` to remove
+|nexus_ocp_namespace|nexus|Yes|Project Name to install Nexus into
+|nexus_ocp_name|nexus3|No|Name of the Nexus service
+|nexus_ocp_ssl|False|No|Set up SSL on the Nexus Route
+|nexus_ocp_volume_size|1Gi|No|Size of Persistent Volume to be created
+|nexus_ocp_memory_request|512Mi|No|Minimum Memory Requirement
+|nexus_ocp_memory_limit|512Mi|No|Maximum Memory Requirement
+|nexus_ocp_cpu_request|200m|No|Minimum CPU Requirement
+|nexus_ocp_cpu_limit|500m|No|Maximum CPU Requirement
+|nexus_ocp_wait_for_init|true|No|Wait for the Nexs pod to be running and ready
+|nexus_ocp_image|docker.io/sonatype/nexus3|Yes|Nexus image for Gitea
+|nexus_ocp_image_tag|latest|Yes|Tag for Nexus container image
+|nexus_ocp_state|present|No|`present` to install, `absent` to remove
 |====
 
 == Dependencies
@@ -40,10 +40,10 @@ This role is designed to set up a Nexus artifact manager on an OpenShift cluster
     include_role:
       name: ./roles/nexus-ocp
     vars:
-    _nexus_namespace: "nexus"
-    _nexus_name: "nexus"
-    _nexus_volume_size: "5Gi"
-    _nexus_ssl: "True"
+    nexus_ocp_namespace: "nexus"
+    nexus_ocp_name: "nexus"
+    nexus_ocp_volume_size: "5Gi"
+    nexus_ocp_ssl: "True"
 ---
 
 == License

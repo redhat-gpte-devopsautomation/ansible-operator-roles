@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ _nexus_name }}"
-  namespace: "{{ _nexus_namespace }}"
+  name: "{{ nexus_ocp_name }}"
+  namespace: "{{ nexus_ocp_namespace }}"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "{{ _nexus_name }}"
+      app: "{{ nexus_ocp_name }}"
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: "{{ _nexus_name }}"
+        app: "{{ nexus_ocp_name }}"
     spec:
-      serviceAccountName: "{{ _nexus_name }}"
+      serviceAccountName: "{{ nexus_ocp_name }}"
       initContainers:
       - name: enable-script-access
         image: busybox
@@ -25,7 +25,7 @@ spec:
           mountPath: /nexus-data
       containers:
       - name: nexus
-        image: "{{ _nexus_image }}:{{ _nexus_image_tag }}"
+        image: "{{ nexus_ocp_image }}:{{ nexus_ocp_image_tag }}"
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
@@ -54,15 +54,15 @@ spec:
           failureThreshold: 3
         resources:
           requests:
-            cpu: "{{ _nexus_cpu_request }}"
-            memory: "{{ _nexus_memory_request}}"
+            cpu: "{{ nexus_ocp_cpu_request }}"
+            memory: "{{ nexus_ocp_memory_request}}"
           limits:
-            cpu: "{{ _nexus_cpu_limit}}"
-            memory: "{{ _nexus_memory_limit }}"
+            cpu: "{{ nexus_ocp_cpu_limit}}"
+            memory: "{{ nexus_ocp_memory_limit }}"
         volumeMounts:
         - name: nexus-data
           mountPath: /nexus-data
       volumes:
       - name: nexus-data
         persistentVolumeClaim:
-          claimName: "{{ _nexus_name }}-pvc"
+          claimName: "{{ nexus_ocp_name }}-pvc"

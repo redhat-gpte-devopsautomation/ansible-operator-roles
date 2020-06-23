@@ -1,45 +1,52 @@
 ---
 # defaults file for nexus-ocp
-_nexus_state: present
-_nexus_namespace: nexus
-_nexus_name: nexus3
+nexus_ocp_state: present
+nexus_ocp_namespace: nexus
+nexus_ocp_name: nexus3
 
-_nexus_ssl: False
-_nexus_volume_size: 20Gi
-_nexus_memory_request: 2Gi
-_nexus_memory_limit: 2Gi
-_nexus_cpu_request: 2
-_nexus_cpu_limit: 2
-#_nexus_image: docker.io/sonatype/nexus3
-_nexus_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
-_nexus_image_tag: latest
+nexus_ocp_ssl: False
+nexus_ocp_volume_size: 20Gi
+nexus_ocp_memory_request: 2Gi
+nexus_ocp_memory_limit: 2Gi
+nexus_ocp_cpu_request: 2
+nexus_ocp_cpu_limit: 2
+#nexus_ocp_image: docker.io/sonatype/nexus3
+nexus_ocp_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
+# Latest is not a valid value for image tag
+nexus_ocp_image_tag: "3.24.0"
 # Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
-_nexus_route: ""
+nexus_ocp_route: ""
 # Set to a valid route for the cluster to make a nicer registry route than svc-project.apps. Leave empty for default route
-_nexus_registry_route: ""
+nexus_ocp_registry_route: ""
 
 # Nexus Admin Password. Used for Nexus versions before 3.17
-_nexus_admin_password: admin123
+nexus_ocp_admin_password: admin123
 
 # New Nexus Admin Password: Set the admin password for
 # Nexus Versions starting with 3.17
 # The Nexus Admin password will be changed to this value from the
 # default generated password
-_nexus_new_admin_password: admin123
+nexus_ocp_new_admin_password: admin123
+
+# Enable anonymous read access
+nexus_ocp_enable_anonymous: True
 
 # --- Repositories ---
 
 # Delete all default Nexus repositories during initial setup
-_nexus_delete_default_repos: true
+nexus_ocp_repos_delete_default: True
 
-_nexus_repos_maven_proxy:
+nexus_ocp_repos_maven_proxy_setup: True
+nexus_ocp_repos_maven_proxy_default:
 - name: maven-central
   remote_url: https://repo1.maven.org/maven2/
   blob_store: default
   strict_content_validation: true
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
-- name: redhat-ga
+# For some reason `redhat-ga` gets converted into `******-ga` when querying repositories
+# So don't user `redhat` in your repo names
+- name: rh-ga
   remote_url: https://maven.repository.redhat.com/ga/
   blob_store: default
   strict_content_validation: true
@@ -52,24 +59,27 @@ _nexus_repos_maven_proxy:
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
 
-_nexus_repos_maven_hosted:
+nexus_ocp_repos_maven_hosted_setup: True
+nexus_ocp_repos_maven_hosted_default:
 - name: releases
   blob_store: default
-  write_policy: allow_once
+  write_policy: allow_once # allow_once or allow
   strict_content_validation: true
   version_policy: release # release, snapshot or mixed
   layout_policy: strict # strict or permissive
 
-_nexus_repos_maven_group:
+nexus_ocp_repos_maven_group_setup: True
+nexus_ocp_repos_maven_group_default:
 - name: maven-all-public
   blob_store: default
   strict_content_validation: true
   member_repos:
   - maven-central
-  - redhat-ga
+  - rh-ga
   - jboss
 
-_nexus_repos_docker_hosted:
+nexus_ocp_repos_docker_hosted_setup: True
+nexus_ocp_repos_docker_hosted_default:
 - name: docker
   http_port: 5000
   https_port: 5001
@@ -78,13 +88,15 @@ _nexus_repos_docker_hosted:
   strict_content_validation: true
   write_policy: allow_once # allow_once or allow
 
-_nexus_repos_npm_proxy:
+nexus_ocp_repos_npm_proxy_setup: True
+nexus_ocp_repos_npm_proxy_default:
 - name: npm
   remote_url: https://registry.npmjs.org
   blob_store: default
   strict_content_validation: true
 
-_nexus_repos_npm_group:
+nexus_ocp_repos_npm_group_setup: True
+nexus_ocp_repos_npm_group_default:
 - name: npm-all
   blob_store: default
   strict_content_validation: true
@@ -93,5 +105,5 @@ _nexus_repos_npm_group:
 
 # --- Internal Variables ---
 # --- Do not change --------
-_nexus_actual_route: ""
-_nexus_current_password: ""
+nexus_ocp_actual_route: ""
+nexus_ocp_current_password: ""

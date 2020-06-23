@@ -1,57 +1,38 @@
 ---
 # Tasks to setup Nexus the first time
 
-# Discover admin password for 3.17+
-- name: Get name of nexus pod
+# Retrieve temporary admin password from Nexus pod
+- name: Get name of Nexus pod
   k8s_info:
     api_version: v1
     kind: Pod
-    namespace: "{{ _nexus_namespace }}"
-    label_selectors: "app={{ _nexus_name }}"
+    namespace: "{{ nexus_ocp_namespace }}"
+    label_selectors: "app={{ nexus_ocp_name }}"
   register: r_nexus_pod
 
 - name: Attempt to read nexus admin password file
-  shell: "oc rsh -n {{ _nexus_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} cat /nexus-data/admin.password"
+  shell: "oc rsh -n {{ nexus_ocp_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} cat /nexus-data/admin.password"
   ignore_errors: true
   register: r_admin_password
 
 - name: Set current password
   when: r_admin_password.rc == 0
   set_fact:
-    _nexus_current_password: "{{ r_admin_password.stdout }}"
+    nexus_ocp_current_password: "{{ r_admin_password.stdout }}"
 
 - name: Set current password to admin password if password file does not exist
   when: not r_admin_password.rc == 0
   set_fact:
-    _nexus_current_password: "{{ _nexus_admin_password }}"
-
-- name: Declare groovy scripts in Nexus
-  uri:
-    url: "{{ nexus_url }}/service/rest/v1/script"
-    user: admin
-    password: "{{ _nexus_current_password }}"
-    body_format: json
-    method: POST
-    force_basic_auth: yes
-    status_code: 204
-    validate_certs: no
-    body:
-      name: "{{ item }}"
-      type: 'groovy'
-      content: "{{ lookup('file', 'groovy/' + item + '.groovy') }}"
-  ignore_errors: true
-  loop:
-  - create_repo_maven_group
-  - set_anon_access
+    nexus_ocp_current_password: "{{ nexus_ocp_admin_password }}"
 
 - name: Delete all repositories
-  when: _nexus_delete_default_repos | bool
+  when: nexus_ocp_repos_delete_default | bool
   block:
   - name: Get current repositories
     uri:
       url: "{{ nexus_url }}/service/rest/v1/repositories"
       user: admin
-      password: "{{ _nexus_current_password }}"
+      password: "{{ nexus_ocp_current_password }}"
       method: GET
       status_code: 200
       force_basic_auth: yes
@@ -63,217 +44,290 @@
     uri:
       url: "{{ nexus_url }}/service/rest/beta/repositories/{{ item.name }}"
       user: admin
-      password: "{{ _nexus_current_password }}"
+      password: "{{ nexus_ocp_current_password }}"
       method: DELETE
       status_code: 204
       force_basic_auth: yes
       validate_certs: no
     loop: "{{ r_repos.json }}"
+    ignore_errors: true
 
 - name: Create Maven Proxy repositories
-  uri:
-    url: "{{ nexus_url }}/service/rest/beta/repositories/maven/proxy"
-    user: admin
-    password: "{{ _nexus_current_password }}"
-    body_format: json
-    method: POST
-    force_basic_auth: yes
-    status_code: 201
-    validate_certs: no
-    body:
-      name: "{{ item.name }}"
-      online: true
-      storage:
-        blobStoreName: "{{ item.blob_store }}"
-        strictContentTypeValidation: "{{ item.strict_content_validation }}"
-      # cleanup:
-      #   policyNames: weekly-cleanup
-      proxy:
-        remoteUrl: "{{ item.remote_url }}"
-        contentMaxAge: 1440
-        metadataMaxAge: 1440
-      negativeCache:
-        enabled: false
-        timeToLive: 1440
-      httpClient:
-        blocked: false
-        autoBlock: false
-        connection:
-          retries: 0
-          userAgentSuffix: string
-          timeout: 60
-          enableCircularRedirects: false
-          enableCookies: false
-      routingRule: string
-      maven:
-        versionPolicy: "{{ item.version_policy | upper }}"
-        layoutPolicy: "{{ item.layout_policy | upper }}"
-  ignore_errors: true
-  loop: "{{ nexus_repos_maven_proxy | d(_nexus_repos_maven_proxy) }}"
+  when: nexus_ocp_repos_maven_proxy_setup | bool
+  block:
+  - name: Use Maven Proxy repos
+    when: nexus_ocp_repos_maven_proxy | length > 0
+    set_fact:
+      _nexus_ocp_repos_maven_proxy: "{{ nexus_ocp_repos_maven_proxy }}"
+  - name: Use default Maven Proxy repos
+    when: nexus_ocp_repos_maven_proxy | length == 0
+    set_fact:
+      _nexus_ocp_repos_maven_proxy: "{{ nexus_ocp_repos_maven_proxy_default }}"
+  - name: Create Maven Proxy Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/proxy"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        # cleanup:
+        #   policyNames: weekly-cleanup
+        proxy:
+          remoteUrl: "{{ item.remote_url }}"
+          contentMaxAge: 1440
+          metadataMaxAge: 1440
+        negativeCache:
+          enabled: false
+          timeToLive: 1440
+        httpClient:
+          blocked: false
+          autoBlock: false
+          connection:
+            retries: 0
+            userAgentSuffix: string
+            timeout: 60
+            enableCircularRedirects: false
+            enableCookies: false
+        routingRule: string
+        maven:
+          versionPolicy: "{{ item.version_policy | upper }}"
+          layoutPolicy: "{{ item.layout_policy | upper }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_maven_proxy }}"
 
+- name: Create Maven Hosted repositories
+  when: nexus_ocp_repos_maven_hosted_setup | bool
+  block:
+  - name: Use Maven Hosted repos
+    when: nexus_ocp_repos_maven_hosted | length > 0
+    set_fact:
+      _nexus_ocp_repos_maven_hosted: "{{ nexus_ocp_repos_maven_hosted }}"
+  - name: Use default Maven Hosted repos
+    when: nexus_ocp_repos_maven_hosted | length == 0
+    set_fact:
+      _nexus_ocp_repos_maven_hosted: "{{ nexus_ocp_repos_maven_hosted_default }}"
+  - name: Create Maven Hosted Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/hosted"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+          writePolicy: "{{ item.write_policy | upper }}"
+        # cleanup:
+        #   policyNames: weekly-cleanup
+        maven:
+          versionPolicy: "{{ item.version_policy | upper }}"
+          layoutPolicy: "{{ item.layout_policy | upper }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_maven_hosted }}"
+
+# This REST API only exist as of Nexus 3.24
 - name: Create Maven Groups
-  include_tasks: create_repo_maven_group.yml
-  with_items: "{{ nexus_repos_maven_group |  d(_nexus_repos_maven_group) }}"
-
-# This REST API doesn't exist yet as of Nexus 3.21
-# - name: Create Maven Groups
-#   uri:
-#     url: "{{ nexus_url }}/service/rest/beta/repositories/maven/group"
-#     user: admin
-#     password: "{{ _nexus_current_password }}"
-#     body_format: json
-#     method: POST
-#     force_basic_auth: yes
-#     status_code: 201
-#     validate_certs: no
-#     body:
-#       name: "{{ item.name }}"
-#       online: true
-#       storage:
-#         blobStoreName: "{{ item.blob_store }}"
-#         strictContentTypeValidation: "{{ item.strict_content_validation }}"
-#       group:
-#         memberNames: "{{ item.member_repos }}"
-#   ignore_errors: true
-#   loop: "{{ nexus_repos_maven_group | d(_nexus_repos_maven_group) }}"
-
-- name: Create Maven hosted repositories
-  uri:
-    url: "{{ nexus_url }}/service/rest/beta/repositories/maven/hosted"
-    user: admin
-    password: "{{ _nexus_current_password }}"
-    body_format: json
-    method: POST
-    force_basic_auth: yes
-    status_code: 201
-    validate_certs: no
-    body:
-      name: "{{ item.name }}"
-      online: true
-      storage:
-        blobStoreName: "{{ item.blob_store }}"
-        strictContentTypeValidation: "{{ item.strict_content_validation }}"
-        writePolicy: "{{ item.write_policy | upper }}"
-      # cleanup:
-      #   policyNames: weekly-cleanup
-      maven:
-        versionPolicy: "{{ item.version_policy | upper }}"
-        layoutPolicy: "{{ item.layout_policy | upper }}"
-  ignore_errors: true
-  loop: "{{ nexus_repos_maven_hosted | d(_nexus_repos_maven_hosted) }}"
+  when: nexus_ocp_repos_maven_group_setup | bool
+  block:
+  - name: Use Maven Group repos
+    when: nexus_ocp_repos_maven_group | length > 0
+    set_fact:
+      _nexus_ocp_repos_maven_group: "{{ nexus_ocp_repos_maven_group }}"
+  - name: Use default Maven Group repos
+    when: nexus_ocp_repos_maven_group | length == 0
+    set_fact:
+      _nexus_ocp_repos_maven_group: "{{ nexus_ocp_repos_maven_group_default }}"
+  - name: Create Maven Group Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/group"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        group:
+          memberNames: "{{ item.member_repos }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_maven_group }}"
 
 - name: Create Docker repositories
-  uri:
-    url: "{{ nexus_url }}/service/rest/beta/repositories/docker/hosted"
-    user: admin
-    password: "{{ _nexus_current_password }}"
-    body_format: json
-    method: POST
-    force_basic_auth: yes
-    status_code: 201
-    validate_certs: no
-    body:
-      name: "{{ item.name }}"
-      online: true
-      storage:
-        blobStoreName: "{{ item.blob_store }}"
-        strictContentTypeValidation: "{{ item.strict_content_validation }}"
-        writePolicy: "{{ item.write_policy | upper}}"
-      # cleanup:
-      #   policyNames: weekly-cleanup
-      docker:
-        v1Enabled: "{{ item.v1_enabled }}"
-        forceBasicAuth: true
-        httpPort: "{{ item.http_port }}"
-        httpsPort: "{{ item.https_port }}"
-  ignore_errors: true
-  loop: "{{ nexus_repos_docker_hosted | d(_nexus_repos_docker_hosted) }}"
+  when: nexus_ocp_repos_docker_hosted_setup | bool
+  block:
+  - name: Use Docker hosted repos
+    when: nexus_ocp_repos_docker_hosted | length > 0
+    set_fact:
+      _nexus_ocp_repos_docker_hosted: "{{ nexus_ocp_repos_docker_hosted }}"
+  - name: Use default Docker hosted repos
+    when: nexus_ocp_repos_docker_hosted | length == 0
+    set_fact:
+      _nexus_ocp_repos_docker_hosted: "{{ nexus_ocp_repos_docker_hosted_default }}"
+  - name: Create Docker hosted Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/docker/hosted"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+          writePolicy: "{{ item.write_policy | upper}}"
+        # cleanup:
+        #   policyNames: weekly-cleanup
+        docker:
+          v1Enabled: "{{ item.v1_enabled }}"
+          forceBasicAuth: true
+          httpPort: "{{ item.http_port }}"
+          httpsPort: "{{ item.https_port }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_docker_hosted }}"
 
 - name: Create NPM Proxy repositories
-  uri:
-    url: "{{ nexus_url }}/service/rest/beta/repositories/npm/proxy"
-    user: admin
-    password: "{{ _nexus_current_password }}"
-    body_format: json
-    method: POST
-    force_basic_auth: yes
-    status_code: 201
-    validate_certs: no
-    body:
-      name: "{{ item.name }}"
-      online: true
-      storage:
-        blobStoreName: "{{ item.blob_store }}"
-        strictContentTypeValidation: "{{ item.strict_content_validation }}"
-      # cleanup:
-      #   policyNames: weekly-cleanup
-      proxy:
-        remoteUrl: "{{ item.remote_url }}"
-        contentMaxAge: 1440
-        metadataMaxAge: 1440
-      negativeCache:
-        enabled: false
-        timeToLive: 1440
-      httpClient:
-        blocked: false
-        autoBlock: false
-        connection:
-          retries: 0
-          userAgentSuffix: string
-          timeout: 60
-          enableCircularRedirects: false
-          enableCookies: false
-        authentication:
-          type: username
-          username: string
-          ntlmHost: string
-          ntlmDomain: string
-      routingRule: string
-  ignore_errors: true
-  loop: "{{ nexus_repos_npm_proxy | d(_nexus_repos_npm_proxy) }}"
+  when: nexus_ocp_repos_npm_proxy_setup | bool
+  block:
+  - name: Use NPM Proxy repos
+    when: nexus_ocp_repos_npm_proxy | length > 0
+    set_fact:
+      _nexus_ocp_repos_npm_proxy: "{{ nexus_ocp_repos_npm_proxy }}"
+  - name: Use default NPM Proxy repos
+    when: nexus_ocp_repos_npm_proxy | length == 0
+    set_fact:
+      _nexus_ocp_repos_npm_proxy: "{{ nexus_ocp_repos_npm_proxy_default }}"
+  - name: Create NPM Proxy Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/npm/proxy"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        # cleanup:
+        #   policyNames: weekly-cleanup
+        proxy:
+          remoteUrl: "{{ item.remote_url }}"
+          contentMaxAge: 1440
+          metadataMaxAge: 1440
+        negativeCache:
+          enabled: false
+          timeToLive: 1440
+        httpClient:
+          blocked: false
+          autoBlock: false
+          connection:
+            retries: 0
+            userAgentSuffix: string
+            timeout: 60
+            enableCircularRedirects: false
+            enableCookies: false
+        routingRule: string
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_npm_proxy }}"
 
 - name: Create NPM Groups
+  when: nexus_ocp_repos_npm_group_setup | bool
+  block:
+  - name: Use NPM group repos
+    when: nexus_ocp_repos_npm_group | length > 0
+    set_fact:
+      _nexus_ocp_repos_npm_group: "{{ nexus_ocp_repos_npm_group }}"
+  - name: Use default NPM group repos
+    when: nexus_ocp_repos_npm_group | length == 0
+    set_fact:
+      _nexus_ocp_repos_npm_group: "{{ nexus_ocp_repos_npm_group_default }}"
+  - name: Create NPM group Repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/beta/repositories/npm/group"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+        group:
+          memberNames: "{{ item.member_repos }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_npm_group }}"
+
+# This REST API only exist as of Nexus 3.24
+- name: Turn on Anonymous Access
+  when: nexus_ocp_enable_anonymous | bool
   uri:
-    url: "{{ nexus_url }}/service/rest/beta/repositories/npm/group"
+    url: "{{ nexus_url }}/service/rest/beta/security/anonymous"
     user: admin
-    password: "{{ _nexus_current_password }}"
+    password: "{{ nexus_ocp_current_password }}"
     body_format: json
-    method: POST
+    method: PUT
     force_basic_auth: yes
-    status_code: 201
+    status_code: 200
     validate_certs: no
     body:
-      name: "{{ item.name }}"
-      online: true
-      storage:
-        blobStoreName: "{{ item.blob_store }}"
-        strictContentTypeValidation: "{{ item.strict_content_validation }}"
-      group:
-        memberNames: "{{ item.member_repos }}"
+      enabled: true
+      userId: "anonymous"
+      realmName: "NexusAuthorizingRealm"
   ignore_errors: true
-  loop: "{{ nexus_repos_npm_group | d(_nexus_repos_npm_group) }}"
-
-- name: Turn on Anonymous Access
-  include_tasks: set_anon_access.yml
 
 - name: Update Admin Password
-  when: _nexus_new_admin_password | length > 0
+  when: nexus_ocp_new_admin_password | length > 0
   uri:
     url: "{{ nexus_url }}/service/rest/beta/security/users/admin/change-password"
     user: admin
-    password: "{{ _nexus_current_password }}"
+    password: "{{ nexus_ocp_current_password }}"
     headers:
       Content-Type: "text/plain"
     method: PUT
     status_code: 200,204
     force_basic_auth: yes
     validate_certs: no
-    body: "{{ _nexus_new_admin_password }}"
+    body: "{{ nexus_ocp_new_admin_password }}"
 
 - name: Change default password
-  when: _nexus_new_admin_password | length > 0
+  when: nexus_ocp_new_admin_password | length > 0
   set_fact:
-    _nexus_admin_password: "{{ _nexus_new_admin_password }}"
+    nexus_ocp_admin_password: "{{ nexus_ocp_new_admin_password }}"
 
 # The following will fail unless this is running as an operator
 # Report current admin password in Nexus CR status
@@ -284,5 +338,4 @@
     name: "{{ meta.name }}"
     namespace: "{{ meta.namespace }}"
     status:
-      admin_password: "{{ _nexus_new_admin_password }}"
-  ignore_errors: true
+      admin_password: "{{ nexus_ocp_new_admin_password }}"

@@ -1,11 +1,11 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: "{{ _nexus_name }}-pvc"
-  namespace: "{{ _nexus_namespace }}"
+  name: "{{ nexus_ocp_name }}-pvc"
+  namespace: "{{ nexus_ocp_namespace }}"
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: "{{ _nexus_volume_size }}"
+      storage: "{{ nexus_ocp_volume_size }}"
