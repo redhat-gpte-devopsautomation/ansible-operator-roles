@@ -15,7 +15,10 @@
 # - meta.name (from the name of the CR)
 
 - hosts: localhost
-  gather_facts: no
+  gather_facts: no  
+  collections:
+  - community.kubernetes
+  - operator_sdk.util
   tasks:
   - name: Set up Nexus
     include_role:

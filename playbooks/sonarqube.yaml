@@ -12,6 +12,9 @@
 
 - hosts: localhost
   gather_facts: no
+  collections:
+  - community.kubernetes
+  - operator_sdk.util  
   tasks:
   - name: Set up PostgreSQL
     include_role:
