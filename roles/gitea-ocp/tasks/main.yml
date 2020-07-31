@@ -17,7 +17,7 @@
 - name: Get Gitea Route Hostname
   when:
   - _gitea_state == "present"
-  k8s_facts:
+  k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
     name: "{{ _gitea_name }}"
@@ -45,7 +45,7 @@
   when:
     - _gitea_state == "present"
     - _gitea_wait_for_init|bool
-  k8s_facts:
+  k8s_info:
     api_version: apps/v1
     kind: Deployment
     name: "{{ _gitea_name }}"
@@ -57,4 +57,3 @@
   retries: 50
   delay: 10
   ignore_errors: yes
-  
