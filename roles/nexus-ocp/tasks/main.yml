@@ -33,7 +33,6 @@
   k8s:
     state: "{{ nexus_ocp_state }}"
     definition: "{{ lookup('template', './templates/deployment.j2' ) | from_yaml }}"
-  register: r_nexus_changed
 
 - name: Wait until Nexus pod is ready
   when: nexus_ocp_state == "present"
@@ -66,8 +65,16 @@
   set_fact:
     nexus_ocp_actual_route: "{{ r_route.resources[0].status.ingress[0].host }}"
 
+- name: Get Nexus CR
+  k8s_info:
+    api_version: gpte.opentlc.com/v1alpha1
+    kind: Nexus
+    name: "{{ meta.name }}"
+    namespace: "{{ meta.namespace }}"
+  register: r_nexus
+
 - name: Perform Initial Nexus Configuration
-  include_tasks: setup.yml
-  when: r_nexus_changed.method == "create"
+  when: r_nexus.resources[0].status.admin_password is not defined
+  include_tasks: ./setup.yml
   vars:
     nexus_url: "{{ 'http' if not nexus_ocp_ssl | default( False ) | bool else 'https' }}://{{ nexus_ocp_actual_route }}"
