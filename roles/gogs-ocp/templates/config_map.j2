@@ -21,7 +21,7 @@ data:
     ROOT = /gogs-repositories
 
     [server]
-    ROOT_URL="{{ 'http' if not _gogs_ssl|d(False)|bool else 'https' }}://{{ _gogs_actual_route }}"
+    ROOT_URL="{{ 'http' if not _gogs_ssl|d(False)|bool else 'https' }}://{{ _gogs_actual_route }}/"
 
     [security]
     INSTALL_LOCK = true
