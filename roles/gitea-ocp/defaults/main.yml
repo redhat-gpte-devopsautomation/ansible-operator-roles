@@ -12,8 +12,8 @@ _gitea_postgresql_service_name: postgresql
 _gitea_postgresql_user: postgresql
 _gitea_postgresql_password: postgresql
 _gitea_volume_size: 1Gi
-_gitea_memory_request: 512Mi
-_gitea_memory_limit: 512Mi
+_gitea_memory_request: 1Gi
+_gitea_memory_limit: 1Gi
 _gitea_cpu_request: 200m
 _gitea_cpu_limit: 500m
 _gitea_wait_for_init: true
