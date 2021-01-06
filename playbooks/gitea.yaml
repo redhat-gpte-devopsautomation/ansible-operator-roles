@@ -7,8 +7,8 @@
 # - GiteaVolumeSize
 # - GiteaSSL
 # The following variables come from the ansible-operator
-# - meta.namespace
-# - meta.name (from the name of the CR)
+# - ansible_operator_meta.namespace
+# - ansible_operator_meta.name (from the name of the CR)
 
 - hosts: localhost
   gather_facts: no
@@ -23,7 +23,7 @@
       _postgresql_user: "giteauser"
       _postgresql_password: "giteapassword"
       _postgresql_volume_size: "{{ postgresql_volume_size|default('4Gi') }}"
-      _postgresql_image: "{{ postgresql_image | default('registry.redhat.io/rhscl/postgresql-10-rhel7') }}"
+      _postgresql_image: "{{ postgresql_image | default('registry.redhat.io/rhel8/postgresql-12') }}"
       _postgresql_image_tag: "{{ postgresql_image_tag|default('latest') }}"
       _postgresql_memory_request: "{{ postgresql_memory_request | default('512Mi') }}"
       _postgresql_memory_limit: "{{ postgresql_memory_limit | default('512Mi') }}"
