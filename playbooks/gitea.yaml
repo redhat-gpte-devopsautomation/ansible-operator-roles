@@ -15,10 +15,10 @@
   tasks:
   - name: Set up PostgreSQL
     include_role:
-      name: ./roles/postgresql-ocp
+      name: ../roles/postgresql-ocp
     vars:
-      _postgresql_namespace: "{{ meta.namespace }}"
-      _postgresql_name: "postgresql-{{ meta.name }}"
+      _postgresql_namespace: "{{ ansible_operator_meta.namespace }}"
+      _postgresql_name: "postgresql-{{ ansible_operator_meta.name }}"
       _postgresql_database_name: "giteadb"
       _postgresql_user: "giteauser"
       _postgresql_password: "giteapassword"
@@ -32,10 +32,10 @@
 
   - name: Set up Gitea
     include_role:
-      name: ./roles/gitea-ocp
+      name: ../roles/gitea-ocp
     vars:
-      _gitea_namespace: "{{ meta.namespace }}"
-      _gitea_name: "{{ gitea_service_name | default( meta.name ) }}"
+      _gitea_namespace: "{{ ansible_operator_meta.namespace }}"
+      _gitea_name: "{{ gitea_service_name | default( ansible_operator_meta.name ) }}"
       _gitea_ssl: "{{ gitea_ssl | default(False) | bool }}"
       _gitea_route: "{{ gitea_route | default('') }}"
       _gitea_image: "{{ gitea_image | default('quay.io/gpte-devops-automation/gitea') }}"
@@ -45,7 +45,7 @@
       _gitea_memory_limit: "{{ gitea_memory_limit | default('1Gi') }}"
       _gitea_cpu_request: "{{ gitea_cpu_request | default('200m') }}"
       _gitea_cpu_limit: "{{ gitea_cpu_request | default('500m') }}"
-      _gitea_postgresql_service_name: "postgresql-{{ meta.name }}"
+      _gitea_postgresql_service_name: "postgresql-{{ ansible_operator_meta.name }}"
       _gitea_postgresql_database_name: giteadb
       _gitea_postgresql_user: giteauser
       _gitea_postgresql_password: giteapassword
