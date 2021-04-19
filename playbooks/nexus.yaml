@@ -66,6 +66,7 @@
       nexus_ocp_repos_docker_hosted_setup: "{{ nexus_repos_docker_hosted_setup | default( 'True' ) }}"
       nexus_ocp_repos_npm_proxy_setup:     "{{ nexus_repos_npm_proxy_setup     | default( 'True' ) }}"
       nexus_ocp_repos_npm_group_setup:     "{{ nexus_repos_npm_group_setup     | default( 'True' ) }}"
+      nexus_ocp_repos_helm_hosted_setup:   "{{ nexus_repos_helm_hosted_setup   | default( 'False' ) }}"
 
       nexus_ocp_repos_maven_proxy:   "{{ nexus_repos_maven_proxy   | default( '' ) }}"
       nexus_ocp_repos_maven_hosted:  "{{ nexus_repos_maven_hosted  | default( '' ) }}"
@@ -73,3 +74,4 @@
       nexus_ocp_repos_docker_hosted: "{{ nexus_repos_docker_hosted | default( '' ) }}"
       nexus_ocp_repos_npm_proxy:     "{{ nexus_repos_npm_proxy     | default( '' ) }}"
       nexus_ocp_repos_npm_group:     "{{ nexus_repos_npm_group     | default( '' ) }}"
+      nexus_ocp_repos_helm_hosted:   "{{ nexus_repos_helm_hosted   | default( '' ) }}"
