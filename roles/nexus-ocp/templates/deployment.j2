@@ -16,13 +16,6 @@ spec:
         app: "{{ nexus_ocp_name }}"
     spec:
       serviceAccountName: "{{ nexus_ocp_name }}"
-      initContainers:
-      - name: enable-script-access
-        image: quay.io/quay/busybox:latest
-        command: ['sh', '-c', 'if [ ! -d ./nexus-data/etc ]; then mkdir -p ./nexus-data/etc; echo nexus.scripts.allowCreation=true >./nexus-data/etc/nexus.properties; fi']
-        volumeMounts:
-        - name: nexus-data
-          mountPath: /nexus-data
       containers:
       - name: nexus
         image: "{{ nexus_ocp_image }}:{{ nexus_ocp_image_tag }}"

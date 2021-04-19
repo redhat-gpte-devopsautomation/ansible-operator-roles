@@ -103,6 +103,15 @@ nexus_ocp_repos_npm_group_default:
   member_repos:
   - npm
 
+# Helm Hosted Repositories
+ocp4_workload_nexus_operator_repos_helm_hosted_setup: false
+ocp4_workload_nexus_operator_repos_helm_hosted:
+- name: helm
+  blob_store: default
+  write_policy: allow # allow_once or allow
+  strict_content_validation: true
+  proprietaryComponents: true # true or false
+
 # --- Internal Variables ---
 # --- Do not change --------
 nexus_ocp_actual_route: ""
