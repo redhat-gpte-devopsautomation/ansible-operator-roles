@@ -3,7 +3,7 @@
 
 # Retrieve temporary admin password from Nexus pod
 - name: Get name of Nexus pod
-  k8s_info:
+  community.kubernetes.k8s_info:
     api_version: v1
     kind: Pod
     namespace: "{{ nexus_ocp_namespace }}"
@@ -11,17 +11,20 @@
   register: r_nexus_pod
 
 - name: Attempt to read nexus admin password file
-  shell: "oc rsh -n {{ nexus_ocp_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} cat /nexus-data/admin.password"
+  community.kubernetes.k8s_exec:
+    namespace: "{{ nexus_ocp_namespace }}"
+    pod: "{{ r_nexus_pod.resources[0].metadata.name }}"
+    command: "cat /nexus-data/admin.password"
   ignore_errors: true
   register: r_admin_password
 
 - name: Set current password
-  when: r_admin_password.rc == 0
+  when: r_admin_password.return_code == 0
   set_fact:
     nexus_ocp_current_password: "{{ r_admin_password.stdout }}"
 
 - name: Set current password to admin password if password file does not exist
-  when: not r_admin_password.rc == 0
+  when: not r_admin_password.return_code == 0
   set_fact:
     nexus_ocp_current_password: "{{ nexus_ocp_admin_password }}"
 
@@ -343,7 +346,7 @@
       realmName: "NexusAuthorizingRealm"
   ignore_errors: true
 
-- name: Update Admin Password
+- name: Update Admin password
   when: nexus_ocp_new_admin_password | length > 0
   uri:
     url: "{{ nexus_url }}/service/rest/v1/security/users/admin/change-password"
@@ -366,9 +369,9 @@
 # Report current admin password in Nexus CR status
 - name: Save password in custom resource status
   operator_sdk.util.k8s_status:
-    api_version: gpte.opentlc.com/v1alpha1
+    api_version: gpte.opentlc.com/v1
     kind: Nexus
-    name: "{{ meta.name }}"
-    namespace: "{{ meta.namespace }}"
+    name: "{{ ansible_operator_meta.name }}"
+    namespace: "{{ ansible_operator_meta.namespace }}"
     status:
       admin_password: "{{ nexus_ocp_new_admin_password }}"

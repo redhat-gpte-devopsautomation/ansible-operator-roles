@@ -13,7 +13,7 @@ nexus_ocp_cpu_limit: 2
 #nexus_ocp_image: docker.io/sonatype/nexus3
 nexus_ocp_image: registry.connect.redhat.com/sonatype/nexus-repository-manager
 # Latest is not a valid value for image tag
-nexus_ocp_image_tag: "3.26.1-ubi-2"
+nexus_ocp_image_tag: "3.30.0-ubi-1"
 # Set to a valid route for the cluster to make a nicer route than svc-project.apps. Leave empty for default route
 nexus_ocp_route: ""
 # Set to a valid route for the cluster to make a nicer registry route than svc-project.apps. Leave empty for default route

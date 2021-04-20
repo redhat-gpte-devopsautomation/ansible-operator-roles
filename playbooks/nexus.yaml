@@ -11,20 +11,19 @@
 # - nexusMemoryRequest
 # - nexusMemoryLimit
 # The following variables come from the ansible-operator
-# - meta.namespace
-# - meta.name (from the name of the CR)
-
+# - ansible_operator_meta.namespace
+# - ansible_operator_meta.name (from the name of the CR)
 - hosts: localhost
   gather_facts: no
   tasks:
   - name: Set up Nexus
     include_role:
-      name: ./roles/nexus-ocp
+      name: ../roles/nexus-ocp
     vars:
       # Project to install Nexus into
-      nexus_ocp_namespace: "{{ meta.namespace }}"
+      nexus_ocp_namespace: "{{ ansible_operator_meta.namespace }}"
       # Name of the Nexus instance
-      nexus_ocp_name: "{{ meta.name }}"
+      nexus_ocp_name: "{{ ansible_operator_meta.name }}"
 
       # Persistent Volume Claim Size for Nexus
       nexus_ocp_volume_size: "{{ nexus_volume_size | default( '10Gi' ) }}"
