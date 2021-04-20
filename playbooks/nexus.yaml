@@ -11,20 +11,19 @@
 # - nexusMemoryRequest
 # - nexusMemoryLimit
 # The following variables come from the ansible-operator
-# - meta.namespace
-# - meta.name (from the name of the CR)
-
+# - ansible_operator_meta.namespace
+# - ansible_operator_meta.name (from the name of the CR)
 - hosts: localhost
   gather_facts: no
   tasks:
   - name: Set up Nexus
     include_role:
-      name: ./roles/nexus-ocp
+      name: ../roles/nexus-ocp
     vars:
       # Project to install Nexus into
-      nexus_ocp_namespace: "{{ meta.namespace }}"
+      nexus_ocp_namespace: "{{ ansible_operator_meta.namespace }}"
       # Name of the Nexus instance
-      nexus_ocp_name: "{{ meta.name }}"
+      nexus_ocp_name: "{{ ansible_operator_meta.name }}"
 
       # Persistent Volume Claim Size for Nexus
       nexus_ocp_volume_size: "{{ nexus_volume_size | default( '10Gi' ) }}"
@@ -66,6 +65,7 @@
       nexus_ocp_repos_docker_hosted_setup: "{{ nexus_repos_docker_hosted_setup | default( 'True' ) }}"
       nexus_ocp_repos_npm_proxy_setup:     "{{ nexus_repos_npm_proxy_setup     | default( 'True' ) }}"
       nexus_ocp_repos_npm_group_setup:     "{{ nexus_repos_npm_group_setup     | default( 'True' ) }}"
+      nexus_ocp_repos_helm_hosted_setup:   "{{ nexus_repos_helm_hosted_setup   | default( 'False' ) }}"
 
       nexus_ocp_repos_maven_proxy:   "{{ nexus_repos_maven_proxy   | default( '' ) }}"
       nexus_ocp_repos_maven_hosted:  "{{ nexus_repos_maven_hosted  | default( '' ) }}"
@@ -73,3 +73,4 @@
       nexus_ocp_repos_docker_hosted: "{{ nexus_repos_docker_hosted | default( '' ) }}"
       nexus_ocp_repos_npm_proxy:     "{{ nexus_repos_npm_proxy     | default( '' ) }}"
       nexus_ocp_repos_npm_group:     "{{ nexus_repos_npm_group     | default( '' ) }}"
+      nexus_ocp_repos_helm_hosted:   "{{ nexus_repos_helm_hosted   | default( '' ) }}"

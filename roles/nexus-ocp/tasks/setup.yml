@@ -3,7 +3,7 @@
 
 # Retrieve temporary admin password from Nexus pod
 - name: Get name of Nexus pod
-  k8s_info:
+  community.kubernetes.k8s_info:
     api_version: v1
     kind: Pod
     namespace: "{{ nexus_ocp_namespace }}"
@@ -11,17 +11,20 @@
   register: r_nexus_pod
 
 - name: Attempt to read nexus admin password file
-  shell: "oc rsh -n {{ nexus_ocp_namespace}} {{ r_nexus_pod.resources[0].metadata.name }} cat /nexus-data/admin.password"
+  community.kubernetes.k8s_exec:
+    namespace: "{{ nexus_ocp_namespace }}"
+    pod: "{{ r_nexus_pod.resources[0].metadata.name }}"
+    command: "cat /nexus-data/admin.password"
   ignore_errors: true
   register: r_admin_password
 
 - name: Set current password
-  when: r_admin_password.rc == 0
+  when: r_admin_password.return_code == 0
   set_fact:
     nexus_ocp_current_password: "{{ r_admin_password.stdout }}"
 
 - name: Set current password to admin password if password file does not exist
-  when: not r_admin_password.rc == 0
+  when: not r_admin_password.return_code == 0
   set_fact:
     nexus_ocp_current_password: "{{ nexus_ocp_admin_password }}"
 
@@ -42,7 +45,7 @@
   - name: Delete all existing repositories
     when: r_repos.json | length > 0
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/{{ item.name }}"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/{{ item.name }}"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       method: DELETE
@@ -65,7 +68,7 @@
       _nexus_ocp_repos_maven_proxy: "{{ nexus_ocp_repos_maven_proxy_default }}"
   - name: Create Maven Proxy Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/proxy"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/maven/proxy"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -117,7 +120,7 @@
       _nexus_ocp_repos_maven_hosted: "{{ nexus_ocp_repos_maven_hosted_default }}"
   - name: Create Maven Hosted Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/hosted"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/maven/hosted"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -140,7 +143,6 @@
     ignore_errors: true
     loop: "{{ _nexus_ocp_repos_maven_hosted }}"
 
-# This REST API only exist as of Nexus 3.24
 - name: Create Maven Groups
   when: nexus_ocp_repos_maven_group_setup | bool
   block:
@@ -154,7 +156,7 @@
       _nexus_ocp_repos_maven_group: "{{ nexus_ocp_repos_maven_group_default }}"
   - name: Create Maven Group Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/maven/group"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/maven/group"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -186,7 +188,7 @@
       _nexus_ocp_repos_docker_hosted: "{{ nexus_ocp_repos_docker_hosted_default }}"
   - name: Create Docker hosted Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/docker/hosted"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/docker/hosted"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -224,7 +226,7 @@
       _nexus_ocp_repos_npm_proxy: "{{ nexus_ocp_repos_npm_proxy_default }}"
   - name: Create NPM Proxy Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/npm/proxy"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/npm/proxy"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -273,7 +275,7 @@
       _nexus_ocp_repos_npm_group: "{{ nexus_ocp_repos_npm_group_default }}"
   - name: Create NPM group Repositories
     uri:
-      url: "{{ nexus_url }}/service/rest/beta/repositories/npm/group"
+      url: "{{ nexus_url }}/service/rest/v1/repositories/npm/group"
       user: admin
       password: "{{ nexus_ocp_current_password }}"
       body_format: json
@@ -292,11 +294,45 @@
     ignore_errors: true
     loop: "{{ _nexus_ocp_repos_npm_group }}"
 
-# This REST API only exist as of Nexus 3.24
+- name: Create Helm repositories
+  when: nexus_ocp_repos_helm_hosted_setup | bool
+  block:
+  - name: Use Helm hosted repositories
+    when: nexus_ocp_repos_helm_hosted | length > 0
+    set_fact:
+      _nexus_ocp_repos_helm_hosted: "{{ nexus_ocp_repos_helm_hosted }}"
+  - name: Use default Helm hosted repos
+    when: nexus_ocp_repos_helm_hosted | length == 0
+    set_fact:
+      _nexus_ocp_repos_helm_hosted: "{{ nexus_ocp_repos_helm_hosted_default }}"
+  - name: Create Helm hosted repositories
+    uri:
+      url: "{{ nexus_url }}/service/rest/v1/repositories/helm/hosted"
+      user: admin
+      password: "{{ nexus_ocp_current_password }}"
+      body_format: json
+      method: POST
+      force_basic_auth: yes
+      status_code: 201
+      validate_certs: no
+      body:
+        name: "{{ item.name }}"
+        online: true
+        storage:
+          blobStoreName: "{{ item.blob_store }}"
+          strictContentTypeValidation: "{{ item.strict_content_validation }}"
+          writePolicy: "{{ item.write_policy | upper}}"
+        # cleanup:
+        #   policyNames: weekly-cleanup
+        component:
+          proprietaryComponents: "{{ item.proprietaryComponents }}"
+    ignore_errors: true
+    loop: "{{ _nexus_ocp_repos_helm_hosted }}"
+
 - name: Turn on Anonymous Access
   when: nexus_ocp_enable_anonymous | bool
   uri:
-    url: "{{ nexus_url }}/service/rest/beta/security/anonymous"
+    url: "{{ nexus_url }}/service/rest/v1/security/anonymous"
     user: admin
     password: "{{ nexus_ocp_current_password }}"
     body_format: json
@@ -310,10 +346,10 @@
       realmName: "NexusAuthorizingRealm"
   ignore_errors: true
 
-- name: Update Admin Password
+- name: Update Admin password
   when: nexus_ocp_new_admin_password | length > 0
   uri:
-    url: "{{ nexus_url }}/service/rest/beta/security/users/admin/change-password"
+    url: "{{ nexus_url }}/service/rest/v1/security/users/admin/change-password"
     user: admin
     password: "{{ nexus_ocp_current_password }}"
     headers:
@@ -333,9 +369,9 @@
 # Report current admin password in Nexus CR status
 - name: Save password in custom resource status
   operator_sdk.util.k8s_status:
-    api_version: gpte.opentlc.com/v1alpha1
+    api_version: gpte.opentlc.com/v1
     kind: Nexus
-    name: "{{ meta.name }}"
-    namespace: "{{ meta.namespace }}"
+    name: "{{ ansible_operator_meta.name }}"
+    namespace: "{{ ansible_operator_meta.namespace }}"
     status:
       admin_password: "{{ nexus_ocp_new_admin_password }}"
